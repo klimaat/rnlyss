@@ -8,13 +8,20 @@ Developed in Python3.5 under Ubuntu 16.04 but more recent versions or distributi
 
 ### Required packages
 
-* `requests`
-* `numpy`
-* `scipy`
-* `pandas`
-* `h5py`
-* `netCDF4` for MERRA-2
-* `pygrib` for CFSR/CFSv2
+* `requests`: <https://github.com/requests/requests>
+* `numpy`: <https://github.com/numpy/numpy>
+* `scipy`: <https://github.com/scipy/scipy>
+* `pandas`: <https://github.com/pandas-dev/pandas>
+* `h5py`: <https://github.com/h5py/h5py>
+* `netCDF4`: <https://github.com/Unidata/netcdf4-python>
+
+For Debian-based distributions:
+
+```bash
+sudo apt install python3-requests python3-numpy python3-scipy python3-pandas python3-h5py python3-netcdf4
+```
+
+For CFSR/CFSv2, install the package `pygrib` via instructions available at <https://github.com/jswhit/pygrib>.
 
 ### Download and install
 
