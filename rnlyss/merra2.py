@@ -285,14 +285,14 @@ class MERRA2(Dataset):
                 if request.status_code == 200:
                     break
                 print(
-                    "%s unreachable (%d)... " % dst,
-                    "retrying" % request.status_code
+                    "%s unreachable (%d)... " % (dst, request.status_code),
+                    "retrying"
                 )
 
             else:
                 print(
-                    "%s unavailable (%d)... " % dst,
-                    "skipping" % request.status_code
+                    "%s unavailable (%d)... " % (dst, request.status_code),
+                    "skipping"
                 )
 
                 return False
