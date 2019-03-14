@@ -233,9 +233,9 @@ class Dataset(object):
                         continue
 
                     if val is None:
-                        s.append(pd.Series(index=t, data=np.nan))
+                        s.append(pd.Series(index=t, data=np.nan, name=role))
                     else:
-                        s.append(pd.Series(index=t, data=val))
+                        s.append(pd.Series(index=t, data=val, name=role))
 
         # Convert to Pandas series
         if len(s):
@@ -360,7 +360,7 @@ class Dataset(object):
                 # Create column names
                 n = len(x[0].shape)
                 names = [
-                    dvar + '_' + c for _, c in zip(range(n), ['x', 'y', 'z'])
+                    role + '_' + c for _, c in zip(range(n), ['x', 'y', 'z'])
                 ]
                 return pd.DataFrame(
                     index=t,
@@ -371,7 +371,7 @@ class Dataset(object):
                 return pd.Series(
                     index=t,
                     data=np.concatenate(x),
-                    name=dvar
+                    name=role
                 )
 
         return None
