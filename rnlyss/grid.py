@@ -67,6 +67,12 @@ class Grid(object):
         else:
             return i, j
 
+    def lats(self):
+        return self[np.arange(self.shape[0]), 0][0]
+
+    def lons(self):
+        return self[0, np.arange(self.shape[1])][1]
+
     def bbox(self, lat, lon):
         """
         Return indices and weights of corners of bbox given lat, lon.
@@ -202,7 +208,12 @@ class GaussianGrid(Grid):
 
 
 def test():
-    pass
+
+    grid = Grid(
+        shape=(361, 576), origin=(-90, -180), delta=(1/2, 5/8)
+    )
+    print(grid.lats())
+    print(grid.lons())
 
 
 if __name__ == '__main__':
