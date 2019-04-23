@@ -38,7 +38,7 @@ class MERRA2(Dataset):
                  'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
         # Meridional wind (north-south) @ 10m (m/s)
         'V10M': {'role': 'vas', 'scale': 1e-2, 'offset': 0,
-                 'collection': 'tavg1_2d_slv_Nx', 'hour0': 0},
+                 'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
         # Surface pressure (Pa)
         'PS': {'role': 'ps', 'scale': 1, 'offset': 75000,
                'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
