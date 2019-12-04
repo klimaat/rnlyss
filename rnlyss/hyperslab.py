@@ -13,12 +13,17 @@ class HyperSlab(object):
 
     def __init__(self, path, **kwargs):
         self.path = os.path.abspath(path)
+        self.hdf = None
         if os.path.isfile(self.path):
-            self.hdf = h5py.File(self.path, 'a', libver='latest')
-            self.setup()
+            self.connect(mode='r')
 
-        else:
-            self.hdf = None
+    def connect(self, mode='r', **kwargs):
+        """
+        Connect to an existing hdf5 file
+        """
+        self.close()
+        self.hdf = h5py.File(self.path, mode=mode, **kwargs)
+        self.setup()
 
     def setup(self):
 
@@ -114,8 +119,10 @@ class HyperSlab(object):
         Will bork on out of bounds.
         """
         if self:
+            self.connect(mode="r+")
             self.hdf['data'][i] = self.to_int(x)
             self.flush()
+            self.connect(mode="r")
 
     def create(self, shape, year=1970, freq=1, scale=1, offset=0, hour0=0,
                missing=np.iinfo(np.int16).max, **kwargs):
@@ -185,6 +192,9 @@ class HyperSlab(object):
         # Flush buffers
         self.hdf.flush()
 
+        # Re-open in read mode
+        self.connect(mode="r")
+
     def fill(self, t, x):
         """
         Fill hyperslab starting at integer index t with slab x.
@@ -209,6 +219,7 @@ class HyperSlab(object):
 
         with DelayedKeyboardInterrupt():
 
+            self.connect(mode="r+")
             self.hdf['data'][..., t:(t+nt)] = x
             self.hdf['full'][t:(t+nt)] = True
             if 'min' in self.hdf:
@@ -222,13 +233,16 @@ class HyperSlab(object):
                     axis=tuple(range(x.ndim-1))
                 )
             self.flush()
+            self.connect(mode="r")
 
     def empty(self, t):
         """
         Set time slice to missing.
         """
+        self.connect(mode="r+")
         self.hdf['data'][..., t] = self.missing
         self.hdf['full'][t] = False
+        self.connect(mode="r")
 
     def shape(self):
         return self.hdf['data'].shape if self else None
@@ -329,7 +343,6 @@ class HyperSlab(object):
         """
         Return minimum time series
         """
-        print(self.hdf)
         if 'min' in self.hdf:
             return self.to_float(self.hdf['min'][t])
         return None
