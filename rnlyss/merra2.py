@@ -24,19 +24,27 @@ except ImportError:
 class MERRA2(Dataset):
 
     dvars = {
-        # Dry bulb temperature @ 2m (K)
+        # Dry bulb temperature @ 2m, 10m (K)
         'T2M': {'role': 'tas', 'scale': 1e-2, 'offset': 330,
                 'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
+        # 'T10M': {'role': 'tas10', 'scale': 1e-2, 'offset': 330,
+        #         'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
         # Surface temperature (K)
         'TS': {'role': 'ts', 'scale': 1e-2, 'offset': 330,
                'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
-        # Specific humidity @ 2m (kg/kg)
+        # Specific humidity @ 2m, 10m (kg/kg)
         'QV2M': {'role': 'huss', 'scale': 1e-6, 'offset': 0.03,
                  'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
-        # Zonal wind (east-west) @ 10m (m/s)
+        # 'QV10M': {'role': 'huss10', 'scale': 1e-6, 'offset': 0.03,
+        #          'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
+        # Zonal wind (east-west) @ 2m, 10m (m/s)
+        # 'U2M': {'role': 'uas2', 'scale': 1e-2, 'offset': 0,
+        #          'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
         'U10M': {'role': 'uas', 'scale': 1e-2, 'offset': 0,
                  'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
         # Meridional wind (north-south) @ 10m (m/s)
+        # 'V2M': {'role': 'vas2', 'scale': 1e-2, 'offset': 0,
+        #          'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
         'V10M': {'role': 'vas', 'scale': 1e-2, 'offset': 0,
                  'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
         # Surface pressure (Pa)
@@ -92,6 +100,15 @@ class MERRA2(Dataset):
         # Aerosol scattering (0 to 1)
         #'TOTSCATAU': {'role': 'scatter', 'scale': 1e-4,
         #              'collection': 'tavg1_2d_aer_Nx', 'hour0': 1},
+        #  Surface roughness (m); store log(z0)
+        # 'Z0M': {'role': 'z0', 'scale': 1e-3, 'converter': lambda x: np.log(x),
+        #        'collection': 'tavg1_2d_flx_Nx', 'hour0': 1},
+        # Boundary layer height (m)
+        # 'PBLH': {'role': 'pblh', 'scale': 1,
+        #        'collection': 'tavg1_2d_flx_Nx', 'hour0': 1},
+        # Surface flux Richardson number (-)
+        #'RISFC': {'role': 'rif', 'scale': 1e-2,
+        #        'collection': 'tavg1_2d_flx_Nx', 'hour0': 1},
     }
 
     # Time
