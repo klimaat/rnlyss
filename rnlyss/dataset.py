@@ -787,7 +787,7 @@ class Dataset(object):
         )
 
     def to_hof(self, lat, lon, hgt=None, years=None,
-               interp_xy=False, interp_z=False):
+               interp_xy=False, interp_z=False, exact=True):
         """
         Return a dataframe containing drybulb, dewpoint, station pressure,
         wind speed, wind direction as required for the CSV format
@@ -843,7 +843,7 @@ class Dataset(object):
         pw = calc_vapor_pressure(Y, p=p)
 
         # Calculate dew point temperature (C) from vapor pressure
-        dp = pd.Series(data=calc_dew_point_temperature(pw, exact=True),
+        dp = pd.Series(data=calc_dew_point_temperature(pw, exact=exact),
                        index=pw.index, name='DP')
 
         # Bi-linearly interpolate wind
