@@ -31,32 +31,34 @@ def calc_saturation_vapor_pressure(t, jacobian=False):
     The two branches are identical at the triple point 0.01°C.
     """
     T = t + 273.15
-    pws = np.where(
-        # triple point
-        t >= 0.01,
-        # Over water: equation (6)
-        np.exp(
-            -5.8002206e3/T + 1.3914993 - 4.8640239e-2*T + 4.1764768e-5*T**2 -
-            1.4452093e-8*T**3 + 6.5459673*np.log(T)
-        ),
-        # Over ice:  equation (5)
-        np.exp(
-            -5.6745359e3/T + 6.3925247 - 9.6778430e-3*T + 6.2215701e-7*T**2 +
-            2.0747825e-9*T**3 - 9.4840240e-13*T**4 + 4.1635019*np.log(T)
-        )
-    )
-
-    if jacobian:
-        dpws = np.where(
+    with np.errstate(invalid='ignore'):
+        pws = np.where(
             # triple point
             t >= 0.01,
-            # Over water: derivative of equation (6)
-            5.8002206e3/T**2 - 4.8640239e-2 + 2*4.1764768e-5*T -
-            3*1.4452093e-8*T**2 + 6.5459673/T,
-            # Over ice: derivation of equation (5)
-            5.6745359e3/T**2 - 9.6778430e-3 + 2*6.2215701e-7*T +
-            3*2.0747825e-9*T**2 - 4*9.4840240e-13*T**3 + 4.1635019/T
+            # Over water: equation (6)
+            np.exp(
+                -5.8002206e3/T + 1.3914993 - 4.8640239e-2*T + 4.1764768e-5*T**2 -
+                1.4452093e-8*T**3 + 6.5459673*np.log(T)
+            ),
+            # Over ice:  equation (5)
+            np.exp(
+                -5.6745359e3/T + 6.3925247 - 9.6778430e-3*T + 6.2215701e-7*T**2 +
+                2.0747825e-9*T**3 - 9.4840240e-13*T**4 + 4.1635019*np.log(T)
+            )
         )
+
+    if jacobian:
+        with np.errstate(invalid='ignore'):
+            dpws = np.where(
+                # triple point
+                t >= 0.01,
+                # Over water: derivative of equation (6)
+                5.8002206e3/T**2 - 4.8640239e-2 + 2*4.1764768e-5*T -
+                3*1.4452093e-8*T**2 + 6.5459673/T,
+                # Over ice: derivation of equation (5)
+                5.6745359e3/T**2 - 9.6778430e-3 + 2*6.2215701e-7*T +
+                3*2.0747825e-9*T**2 - 4*9.4840240e-13*T**3 + 4.1635019/T
+            )
         dpws *= pws
 
         return pws, dpws

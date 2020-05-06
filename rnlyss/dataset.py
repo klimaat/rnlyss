@@ -484,8 +484,11 @@ class Dataset(object):
                             # Wind speed
                             ws_ij = np.hypot(uas_ij, vas_ij)
                             # Normalize
-                            uas_ij /= ws_ij
-                            vas_ij /= ws_ij
+                            with np.errstate(invalid='ignore'):
+                                # NaNs and zeros will be False
+                                k = ws_ij > 0
+                            uas_ij[k] /= ws_ij[k]
+                            vas_ij[k] /= ws_ij[k]
                             # Weighted-average of speed and normalized (u, v)
                             if ws is None:
                                 ws = wgt_ij*ws_ij
@@ -507,8 +510,11 @@ class Dataset(object):
                         # Wind speed
                         ws_ij = np.hypot(uas_ij, vas_ij)
                         # Normalize
-                        uas_ij /= ws_ij
-                        vas_ij /= ws_ij
+                        with np.errstate(invalid='ignore'):
+                            # NaNs and zeros will be False
+                            k = ws_ij > 0
+                        uas_ij[k] /= ws_ij[k]
+                        vas_ij[k] /= ws_ij[k]
                         # Weighted-average of speed and normalized (u, v)
                         if ws is None:
                             ws = wgt_ij*ws_ij
