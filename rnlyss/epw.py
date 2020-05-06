@@ -431,7 +431,7 @@ def write_epw(path, dsets, years, lat=0, lon=0, hgt=0, tz=0, **kwargs):
     T_mean = df['DB'].mean()
 
     # Monthly average temperatures
-    T_mth_avg = df['DB'].resample("M", how="mean")
+    T_mth_avg = df['DB'].resample("M").mean()
 
     # Low and high monthly temperatures and coldest month
     T_min = T_mth_avg.min()
