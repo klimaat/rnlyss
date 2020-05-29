@@ -265,7 +265,99 @@ def orbit_cfsr(utc):
     return sdec, cdec, slag, solFactor
 
 
+def orbit_noaa(utc):
+    """
+    Orbit as per NOAA Solar Calculation spreadsheet
+    https://www.esrl.noaa.gov/gmd/grad/solcalc/calcdetails.html
+
+    Similar to CFSR but faster
+    """
+
+    # Julian day (including fractional part)
+    jd, fjd = julian_day(utc)
+    jd = jd + fjd
+
+    # Julian century
+    jc = (jd - 2451545) / 36525
+
+    # Geometric mean longitude (deg)
+    gml = (280.46646 + jc * (36000.76983 + jc * 0.0003032)) % 360
+
+    # Geometric mean anomaly Sun (deg)
+    gma = 357.52911 + jc * (35999.05029 - 0.0001537 * jc)
+
+    # Eccentricity of Earth's orbit
+    ecc = 0.016708634 - jc * (0.000042037 + 0.0000001267 * jc)
+
+    # Sun equation of centre (deg)
+    ctr = (
+        np.sin(np.radians(gma))
+        * (1.914602 - jc * (0.004817 + 0.000014 * jc))
+        + np.sin(np.radians(2 * gma)) * (0.019993 - 0.000101 * jc)
+        + np.sin(np.radians(3 * gma)) * 0.000289
+    )
+
+    # Sun true longitude (deg)
+    stl = gml + ctr
+
+    # Sun true anomaly (deg)
+    sta = gma + ctr
+
+    # Sun radius vector (AUs)
+    rad = (1.000001018 * (1 - ecc * ecc)) / (
+        1 + ecc * np.cos(np.radians(sta))
+    )
+
+    # Sun apparent longitude (deg)
+    sal = stl - 0.00569 - 0.00478 * np.sin(np.radians(125.04 - 1934.136 * jc))
+
+    # Mean obliquity ecliptic (deg)
+    moe = (23 + (26 + ((21.448 - jc * (46.815 + jc * (0.00059 - jc * 0.001813)))) / 60) / 60)
+
+    # Obliquity correction (deg)
+    obl = moe + 0.00256 * np.cos(np.radians(125.04 - 1934.136 * jc))
+
+    # Sun right ascension (deg)
+    sra = np.degrees(
+        np.arctan2(
+            np.cos(np.radians(obl)) * np.sin(np.radians(sal)),
+            np.cos(np.radians(sal)),
+        )
+    )
+
+    # Sun declination
+    sinDec = np.sin(np.radians(obl)) * np.sin(np.radians(sal))
+    cosDec = np.sqrt(1.0 - sinDec*sinDec)
+
+    # Var y
+    vary = np.tan(np.radians(obl / 2)) * np.tan(np.radians(obl / 2))
+
+    # Equation of time (minutes)
+    eqnOfTime = 4 * np.degrees(
+        vary * np.sin(2 * np.radians(gml))
+        - 2 * ecc * np.sin(np.radians(gma))
+        + 4
+        * ecc
+        * vary
+        * np.sin(np.radians(gma))
+        * np.cos(2 * np.radians(gml))
+        - 0.5 * vary * vary * np.sin(4 * np.radians(gml))
+        - 1.25 * ecc * ecc * np.sin(2 * np.radians(gma))
+    )
+
+    # Convert from minutes to radians
+    eqnOfTime *= np.pi/(60*12)
+
+    # Solar constant correction factor (inversely with radius squared)
+    solFactor = 1/(rad**2)
+
+    return sinDec, cosDec, eqnOfTime, solFactor
+
+
 def orbit_merra2(utc):
+    """
+    Orbit as per MERRA2 code
+    """
 
     # MERRA-2 solar repeats on a four-year leap-year cycle
     yearlen = 365.25
@@ -342,6 +434,7 @@ def orbit_merra2(utc):
 
     return sinDec, cosDec, eqnOfTime, solFactor
 
+
 # For caching MERRA-2 orbit
 orbit_merra2.orbit = None
 
@@ -364,6 +457,8 @@ def orbit(utc, method=None):
             func = orbit_energyplus
         elif method.startswith("M"):
             func = orbit_merra2
+        elif method.startswith("N"):
+            func = orbit_noaa
         else:
             raise NotImplementedError(method)
 
@@ -521,6 +616,8 @@ def total_solar_irradiance(utc, method=None):
             func = total_solar_irradiance_ashrae
         elif method.startswith("M"):
             func = total_solar_irradiance_merra2
+        elif method.startswith("N"):
+            func = total_solar_irradiance_ashrae
         else:
             raise NotImplementedError(method)
 
@@ -1107,7 +1204,7 @@ def test_coeffs(year=2018):
 
     f, ax = plt.subplots(4)
 
-    for method in ['ashrae', 'energyplus', 'cfsr', 'merra2']:
+    for method in ['ashrae', 'energyplus', 'cfsr', 'merra2', 'noaa']:
         coeffs = orbit(utc, method=method)
         for i, ylabel in enumerate(['sinDec', 'cosDec',
                                     'eqnOfTime', 'solFactor']):
@@ -1132,7 +1229,7 @@ def test_location(lat=33.64, lon=-84.43, dates=None):
 
         f, ax = plt.subplots(3)
 
-        for method in ['ashrae', 'energyplus', 'cfsr', 'merra']:
+        for method in ['ashrae', 'energyplus', 'cfsr', 'merra', 'noaa']:
             x, y, z = position(lat, lon, t, method=method)
             ax[0].plot_date(t.astype(datetime.datetime), to_altitude(z),
                             label=method, fmt='-')
