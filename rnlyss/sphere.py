@@ -21,7 +21,7 @@ def calc_distance(lat1, lon1, lat2, lon2, r=_EARTH_RADIUS):
     dlon = lon2 - lon1
 
     dlat = lat2 - lat1
-    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
+    a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
     c = 2 * np.arcsin(np.sqrt(a))
 
     # Distance is angle*radius
@@ -33,8 +33,8 @@ def to_cartesian(lat, lon, r=_EARTH_RADIUS):
     Convert spherical coordinates to Cartesian.
     """
     lat, lon = map(np.radians, [lat, lon])
-    cos = np.cos(lat)*r
-    return np.squeeze(np.c_[cos*np.cos(lon), cos*np.sin(lon), np.sin(lat)*r])
+    cos = np.cos(lat) * r
+    return np.squeeze(np.c_[cos * np.cos(lon), cos * np.sin(lon), np.sin(lat) * r])
 
 
 def calc_bearing(lat1, lon1, lat2, lon2):
@@ -44,8 +44,8 @@ def calc_bearing(lat1, lon1, lat2, lon2):
     lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
     dlon = lon2 - lon1
     a = np.arctan2(
-        np.sin(dlon)*np.cos(lat2),
-        np.cos(lat1)*np.sin(lat2)-np.sin(lat1)*np.cos(lat2)*np.cos(dlon)
+        np.sin(dlon) * np.cos(lat2),
+        np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(dlon),
     )
 
     return (np.degrees(a) + 360.0) % 360.0
@@ -55,8 +55,8 @@ def calc_area(lat1, lat2, lon1, lon2, r=_EARTH_RADIUS):
     """
     Calculate the area bound by lat1, lon1, lat2, lon2
     """
-    dlon = np.radians(np.where(lon1 > lon2, lon2 + 360.0 - lon1, lon2-lon1))
-    return dlon*np.fabs(np.sin(np.radians(lat2))-np.sin(np.radians(lat1)))*r**2
+    dlon = np.radians(np.where(lon1 > lon2, lon2 + 360.0 - lon1, lon2 - lon1))
+    return dlon * np.fabs(np.sin(np.radians(lat2)) - np.sin(np.radians(lat1))) * r ** 2
 
 
 def test():

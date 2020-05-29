@@ -6,9 +6,15 @@
 import numpy as np
 
 
-def calc_ground_temperatures(Tavg, Tmin, Tmax, coldest_month,
-                             depth=[0.5, 2, 4], leap_year=False,
-                             diffusivity=2.3225760e-3):
+def calc_ground_temperatures(
+    Tavg,
+    Tmin,
+    Tmax,
+    coldest_month,
+    depth=[0.5, 2, 4],
+    leap_year=False,
+    diffusivity=2.3225760e-3,
+):
     """
     Calculate ground temperatures given the average, minimum, and maximum
     monthly temperatures and the coldest month.
@@ -27,28 +33,34 @@ def calc_ground_temperatures(Tavg, Tmin, Tmax, coldest_month,
             [np.nan, 15, 46, 74, 95, 135, 166, 196, 227, 258, 288, 319, 349]
         )
 
-    beta = np.asarray(depth)*np.sqrt(np.pi/(diffusivity*year_hours))
+    beta = np.asarray(depth) * np.sqrt(np.pi / (diffusivity * year_hours))
 
     ebeta = np.exp(-beta)
     cbeta = np.cos(beta)
     sbeta = np.sin(beta)
 
-    amp = 0.5*(Tmax-Tmin)*np.sqrt((ebeta**2 - 2*ebeta*cbeta + 1) / (2*beta**2))
+    amp = (
+        0.5
+        * (Tmax - Tmin)
+        * np.sqrt((ebeta ** 2 - 2 * ebeta * cbeta + 1) / (2 * beta ** 2))
+    )
 
-    phi0 = 0.017214*month_day_15[coldest_month]+0.341787
+    phi0 = 0.017214 * month_day_15[coldest_month] + 0.341787
 
-    phi0 = phi0 + np.arctan((1-ebeta*(cbeta+sbeta))/(1-ebeta*(cbeta-sbeta)))
+    phi0 = phi0 + np.arctan(
+        (1 - ebeta * (cbeta + sbeta)) / (1 - ebeta * (cbeta - sbeta))
+    )
 
-    phi = 2*np.pi/year_hours*24*month_day_15[range(1, 13)]
+    phi = 2 * np.pi / year_hours * 24 * month_day_15[range(1, 13)]
 
-    return np.squeeze(Tavg-amp[:, None]*np.cos(phi-phi0[:, None]))
+    return np.squeeze(Tavg - amp[:, None] * np.cos(phi - phi0[:, None]))
 
 
 def test(Tavg, Tmin, Tgnd_org):
 
     # Annual mean, min and max monthly-mean temperature and coldest month
     days_in_month = np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
-    Tmean_mean = np.round(np.sum(Tavg*days_in_month)/np.sum(days_in_month), 1)
+    Tmean_mean = np.round(np.sum(Tavg * days_in_month) / np.sum(days_in_month), 1)
     Tmean_min = np.min(Tavg)
     Tmean_max = np.max(Tavg)
 
@@ -57,20 +69,17 @@ def test(Tavg, Tmin, Tgnd_org):
 
     # Calc
     Tgnd_calc = calc_ground_temperatures(
-        Tmean_mean,
-        Tmean_min,
-        Tmean_max,
-        coldest_month
+        Tmean_mean, Tmean_min, Tmean_max, coldest_month
     )
 
     # Error
-    print('Error', Tgnd_calc-Tgnd_org)
-    print('Bias', np.mean(Tgnd_calc-Tgnd_org))
+    print("Error", Tgnd_calc - Tgnd_org)
+    print("Bias", np.mean(Tgnd_calc - Tgnd_org))
 
     import matplotlib.pyplot as plt
 
-    plt.plot(range(1, 13), Tgnd_org.T, 'o-', label='Expected')
-    plt.plot(range(1, 13), Tgnd_calc.T, 'x-', label='Calculated')
+    plt.plot(range(1, 13), Tgnd_org.T, "o-", label="Expected")
+    plt.plot(range(1, 13), Tgnd_calc.T, "x-", label="Calculated")
 
     plt.legend(loc=0)
 
@@ -78,6 +87,7 @@ def test(Tavg, Tmin, Tgnd_org):
 
 
 def main():
+    # fmt: off
     # ABU DHABI
 
     # Monthly mean temperatures
@@ -116,6 +126,8 @@ def main():
     ])
 
     test(Tavg, Tmin, Tgnd)
+
+    # fmt: on
 
 
 if __name__ == "__main__":

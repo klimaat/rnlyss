@@ -11,6 +11,7 @@ class Timer(object):
     """
     Simple Timer object.
     """
+
     def __init__(self, name=None):
         self.name = name
 
@@ -19,8 +20,8 @@ class Timer(object):
 
     def __exit__(self, type_, value, traceback):
         if self.name:
-            print('[%s]' % self.name, end=" ")
-        print('Elapsed: %s' % (time.time() - self.tstart))
+            print("[%s]" % self.name, end=" ")
+        print("Elapsed: %s" % (time.time() - self.tstart))
 
 
 def syslog_elapsed_time(seconds, msg):
@@ -33,14 +34,13 @@ def syslog_elapsed_time(seconds, msg):
 
 
 class DelayedKeyboardInterrupt(object):
-
     def __enter__(self):
         self.signal_received = False
         self.old_handler = signal.signal(signal.SIGINT, self.handler)
 
     def handler(self, sig, frame):
         self.signal_received = (sig, frame)
-        print('\nSIGINT received. Delaying KeyboardInterrupt.')
+        print("\nSIGINT received. Delaying KeyboardInterrupt.")
 
     def __exit__(self, type, value, traceback):
         signal.signal(signal.SIGINT, self.old_handler)
@@ -49,7 +49,7 @@ class DelayedKeyboardInterrupt(object):
 
 
 def test():
-    with Timer('test'):
+    with Timer("test"):
         time.sleep(0.1)
 
     syslog_elapsed_time(1234, "Hello.")
@@ -58,5 +58,5 @@ def test():
         time.sleep(100)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test()

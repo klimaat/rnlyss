@@ -12,17 +12,15 @@ class CFSR(CFSV2):
     years = 1979, 2010
 
     # Grid  (576x1152)
-    grid = GaussianGrid(
-        shape=(576, 1152), origin=(90, 0), delta=(-1, 360/1152)
-    )
+    grid = GaussianGrid(shape=(576, 1152), origin=(90, 0), delta=(-1, 360 / 1152))
 
     # CFSR RDA dataset
-    dataset = 'ds093'
+    dataset = "ds093"
 
 
 def main():
     pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

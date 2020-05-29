@@ -13,35 +13,41 @@ def main():
     """
 
     parser = argparse.ArgumentParser(
-        description=main.__doc__,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        description=main.__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument('dset', help='Specify dataset')
+    parser.add_argument("dset", help="Specify dataset")
 
     parser.add_argument(
-        '-v', '--dvars', metavar='str', nargs='+',
-        help='Specify dataset variable; default is to include all available'
-    )
-
-    parser.add_argument(
-        '-y', '--years', type=int, metavar='year', nargs='+',
-        help='Specify year(s); default is to include all available'
+        "-v",
+        "--dvars",
+        metavar="str",
+        nargs="+",
+        help="Specify dataset variable; default is to include all available",
     )
 
     parser.add_argument(
-        '-m', '--months', type=int, metavar='month', nargs='+',
-        help='Specify month(s); default is to include all available'
+        "-y",
+        "--years",
+        type=int,
+        metavar="year",
+        nargs="+",
+        help="Specify year(s); default is to include all available",
     )
 
     parser.add_argument(
-        '-f', '--force', action='store_true',
-        help='Force overwrite.'
+        "-m",
+        "--months",
+        type=int,
+        metavar="month",
+        nargs="+",
+        help="Specify month(s); default is to include all available",
     )
 
+    parser.add_argument("-f", "--force", action="store_true", help="Force overwrite.")
+
     parser.add_argument(
-        '-l', '--list', action='store_true',
-        help='List years stacked then quit'
+        "-l", "--list", action="store_true", help="List years stacked then quit"
     )
 
     args = parser.parse_args()
@@ -60,5 +66,5 @@ def main():
     dset.stack(**vars(args))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

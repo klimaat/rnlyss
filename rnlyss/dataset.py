@@ -18,15 +18,15 @@ from rnlyss.psychro import calc_vapor_pressure, calc_dew_point_temperature
 
 
 # Register possible dataset sources
-DATASETS = ['CFSV2', 'CFSR', 'MERRA2']
+DATASETS = ["CFSV2", "CFSR", "MERRA2"]
 
 
-def import_module(dset, root='rnlyss'):
+def import_module(dset, root="rnlyss"):
     """
     Import library for dset
     """
     try:
-        return importlib.import_module('%s.%s' % (root.lower(), dset.lower()))
+        return importlib.import_module("%s.%s" % (root.lower(), dset.lower()))
     except ImportError:
         print("Specify one of %r" % (DATASETS))
         raise SystemExit
@@ -51,9 +51,9 @@ def load_dataset(dset, **kwargs):
 def get_config_dir(config_file, dset):
     config = configparser.ConfigParser()
     config.read(config_file)
-    data_dir = config.get('Data', dset, fallback=None)
+    data_dir = config.get("Data", dset, fallback=None)
     if data_dir is None:
-        return os.path.join(os.path.expanduser('~'), dset)
+        return os.path.join(os.path.expanduser("~"), dset)
     else:
         return os.path.normpath(os.path.join(data_dir, dset))
 
@@ -63,6 +63,7 @@ class Dataset(object):
     Base class for gridded datasets e.g. CFSR.
     Point to a set of 3D HDF5 hyperslabs.
     """
+
     # Dataset variables
     dvars = {}
 
@@ -102,28 +103,26 @@ class Dataset(object):
         if data_dir is None:
             if dset.upper() in os.environ:
                 # Use environment variable directly
-                self.data_dir = os.path.normpath(os.path.join(
-                    os.environ[dset.upper()],
-                    dset
-                ))
+                self.data_dir = os.path.normpath(
+                    os.path.join(os.environ[dset.upper()], dset)
+                )
 
-            elif 'XDG_CONFIG_HOME' in os.environ:
+            elif "XDG_CONFIG_HOME" in os.environ:
                 # Read from config file, i.e. ~/.config/rnlyss.conf
                 self.data_dir = get_config_dir(
-                    os.path.join(os.environ['XDG_CONFIG_HOME'], 'rnlyss.conf'),
-                    dset
+                    os.path.join(os.environ["XDG_CONFIG_HOME"], "rnlyss.conf"), dset
                 )
 
             else:
                 # Default is $HOME/dset
-                self.data_dir = os.path.join(os.path.expanduser('~'), dset)
+                self.data_dir = os.path.join(os.path.expanduser("~"), dset)
 
         else:
             # Specified
             self.data_dir = os.path.normpath(data_dir)
 
         # Ensure directory exists
-        os.makedirs(self.get_data_path('h5'), exist_ok=True)
+        os.makedirs(self.get_data_path("h5"), exist_ok=True)
 
     def get_data_path(self, *sub_dirs):
         """
@@ -141,13 +140,13 @@ class Dataset(object):
         if isinstance(key, tuple):
             if len(key) == 2:
                 dvar, year = key
-                path = self.get_data_path('h5', "%04d" % year, "%s.h5" % dvar)
+                path = self.get_data_path("h5", "%04d" % year, "%s.h5" % dvar)
                 return HyperSlab(path)
             else:
                 raise NotImplementedError(key)
         elif isinstance(key, str):
             if self.isconstant(key):
-                path = self.get_data_path('h5', "%s.h5" % key)
+                path = self.get_data_path("h5", "%s.h5" % key)
                 return HyperSlab(path)
             else:
                 raise NotImplementedError(key)
@@ -160,9 +159,9 @@ class Dataset(object):
         """
 
         if isinstance(role, tuple):
-            dvars = [None]*len(role)
+            dvars = [None] * len(role)
             for dvar in self.dvars:
-                stored = self.dvars[dvar].get('role', None)
+                stored = self.dvars[dvar].get("role", None)
                 if isinstance(stored, tuple):
                     if stored == role:
                         return dvar
@@ -170,11 +169,11 @@ class Dataset(object):
                     for i, comp in enumerate(role):
                         if stored == comp:
                             dvars[i] = dvar
-            return(tuple(dvars))
+            return tuple(dvars)
 
         else:
             for dvar in self.dvars:
-                stored = self.dvars[dvar].get('role', None)
+                stored = self.dvars[dvar].get("role", None)
                 if isinstance(stored, tuple):
                     for comp in stored:
                         if comp == role:
@@ -189,15 +188,15 @@ class Dataset(object):
         """
         Return minimum of dvar if available
         """
-        return self.maxmin(role=role, years=years, maxmin='min')
+        return self.maxmin(role=role, years=years, maxmin="min")
 
     def max(self, role, years=None):
         """
         Return maximum of dvar if available
         """
-        return self.maxmin(role=role, years=years, maxmin='max')
+        return self.maxmin(role=role, years=years, maxmin="max")
 
-    def maxmin(self, role, years=None, maxmin='max'):
+    def maxmin(self, role, years=None, maxmin="max"):
 
         s = []
 
@@ -243,8 +242,18 @@ class Dataset(object):
 
         return None
 
-    def __call__(self, role, lat, lon, hgt=None, years=None, order=0,
-                 scale_height=None, lapse_rate=None, offset=None):
+    def __call__(
+        self,
+        role,
+        lat,
+        lon,
+        hgt=None,
+        years=None,
+        order=0,
+        scale_height=None,
+        lapse_rate=None,
+        offset=None,
+    ):
         """
         Extract time series of role at (lat, lon, hgt).
 
@@ -261,8 +270,8 @@ class Dataset(object):
         by the amount in minutes
         """
 
-        if hasattr(lat, '__len__') or hasattr(lon, '__len__'):
-            raise NotImplemented('Specify only single location.')
+        if hasattr(lat, "__len__") or hasattr(lon, "__len__"):
+            raise NotImplemented("Specify only single location.")
 
         # Get related dvar for role
         dvar = self.get_dvar(role)
@@ -286,10 +295,10 @@ class Dataset(object):
             raise ValueError("Order must be 0 (nearest) or 1 (bi-linear)")
 
         if hgt is None:
-            hgts = [None]*len(inds)
+            hgts = [None] * len(inds)
         else:
             # Get heights at all grid points
-            with self[self.get_dvar('hgt')] as slab:
+            with self[self.get_dvar("hgt")] as slab:
                 hgts = [slab[i, j, 0] for i, j in inds]
 
         def extract(slab):
@@ -310,15 +319,15 @@ class Dataset(object):
 
                     # Scale to hgt
                     if scale_height is not None:
-                        val_ij *= np.exp((hgt_ij-hgt)/scale_height)
+                        val_ij *= np.exp((hgt_ij - hgt) / scale_height)
 
                     if lapse_rate is not None:
-                        val_ij += lapse_rate*(hgt-hgt_ij)
+                        val_ij += lapse_rate * (hgt - hgt_ij)
 
                 if val is None:
-                    val = wgt_ij*val_ij
+                    val = wgt_ij * val_ij
                 else:
-                    val += wgt_ij*val_ij
+                    val += wgt_ij * val_ij
 
             return val
 
@@ -354,25 +363,15 @@ class Dataset(object):
             t = np.concatenate(t)
 
             if offset is not None:
-                t += np.timedelta64(int(np.rint(offset)), 'm')
+                t += np.timedelta64(int(np.rint(offset)), "m")
 
             if self.isvector(dvar):
                 # Create column names
                 n = len(x[0].shape)
-                names = [
-                    role + '_' + c for _, c in zip(range(n), ['x', 'y', 'z'])
-                ]
-                return pd.DataFrame(
-                    index=t,
-                    data=np.concatenate(x),
-                    columns=names
-                )
+                names = [role + "_" + c for _, c in zip(range(n), ["x", "y", "z"])]
+                return pd.DataFrame(index=t, data=np.concatenate(x), columns=names)
             else:
-                return pd.Series(
-                    index=t,
-                    data=np.concatenate(x),
-                    name=role
-                )
+                return pd.Series(index=t, data=np.concatenate(x), name=role)
 
         return None
 
@@ -390,7 +389,7 @@ class Dataset(object):
         order=0: snap to nearest grid point horizontally.
         order=1: perform bi-linear interpolation
         """
-        return self('hgt', lat, lon, order=order)
+        return self("hgt", lat, lon, order=order)
 
     def land(self, lat, lon, order=0):
         """
@@ -401,7 +400,7 @@ class Dataset(object):
 
         Make need to be over-ridden by subclass
         """
-        return self('land', lat, lon, order=order)
+        return self("land", lat, lon, order=order)
 
     def hgts(self, lats, lons, order=0):
         """
@@ -413,7 +412,7 @@ class Dataset(object):
         Vectorized.
         """
 
-        with self[self.get_dvar('hgt')] as slab:
+        with self[self.get_dvar("hgt")] as slab:
 
             # Grab entire array
             hgt = slab[:, :, 0]
@@ -429,7 +428,7 @@ class Dataset(object):
 
                 ij = np.array([np.atleast_1d(i), np.atleast_1d(j)])
                 # Map float indices into hgt
-                hgts = map_coordinates(hgt, ij, mode='nearest', order=1)
+                hgts = map_coordinates(hgt, ij, mode="nearest", order=1)
 
             else:
                 #  Other orders...
@@ -448,8 +447,8 @@ class Dataset(object):
         No vertical interpolation.
         """
 
-        if hasattr(lat, '__len__') or hasattr(lon, '__len__'):
-            raise ValueError('Specify only single location.')
+        if hasattr(lat, "__len__") or hasattr(lon, "__len__"):
+            raise ValueError("Specify only single location.")
 
         if order == 0:
             # Nearest point gets full weight
@@ -466,7 +465,7 @@ class Dataset(object):
 
         # Get dvar(s) corresponding to wind
         # e.g. "wnd10m" for CFSR or ("U10M", "V10M") for MERRA
-        dvars = self.get_dvar(('uas', 'vas'))
+        dvars = self.get_dvar(("uas", "vas"))
 
         t, x, y = [], [], []
 
@@ -484,20 +483,20 @@ class Dataset(object):
                             # Wind speed
                             ws_ij = np.hypot(uas_ij, vas_ij)
                             # Normalize
-                            with np.errstate(invalid='ignore'):
+                            with np.errstate(invalid="ignore"):
                                 # NaNs and zeros will be False
                                 k = ws_ij > 0
                             uas_ij[k] /= ws_ij[k]
                             vas_ij[k] /= ws_ij[k]
                             # Weighted-average of speed and normalized (u, v)
                             if ws is None:
-                                ws = wgt_ij*ws_ij
-                                u = wgt_ij*uas_ij
-                                v = wgt_ij*vas_ij
+                                ws = wgt_ij * ws_ij
+                                u = wgt_ij * uas_ij
+                                v = wgt_ij * vas_ij
                             else:
-                                ws += wgt_ij*ws_ij
-                                u += wgt_ij*uas_ij
-                                v += wgt_ij*vas_ij
+                                ws += wgt_ij * ws_ij
+                                u += wgt_ij * uas_ij
+                                v += wgt_ij * vas_ij
 
                     t.append(slabx.time())
 
@@ -510,20 +509,20 @@ class Dataset(object):
                         # Wind speed
                         ws_ij = np.hypot(uas_ij, vas_ij)
                         # Normalize
-                        with np.errstate(invalid='ignore'):
+                        with np.errstate(invalid="ignore"):
                             # NaNs and zeros will be False
                             k = ws_ij > 0
                         uas_ij[k] /= ws_ij[k]
                         vas_ij[k] /= ws_ij[k]
                         # Weighted-average of speed and normalized (u, v)
                         if ws is None:
-                            ws = wgt_ij*ws_ij
-                            u = wgt_ij*uas_ij
-                            v = wgt_ij*vas_ij
+                            ws = wgt_ij * ws_ij
+                            u = wgt_ij * uas_ij
+                            v = wgt_ij * vas_ij
                         else:
-                            ws += wgt_ij*ws_ij
-                            u += wgt_ij*uas_ij
-                            v += wgt_ij*vas_ij
+                            ws += wgt_ij * ws_ij
+                            u += wgt_ij * uas_ij
+                            v += wgt_ij * vas_ij
 
                     t.append(slab.time())
 
@@ -536,10 +535,8 @@ class Dataset(object):
         # Convert to Pandas series
         if len(t):
             return (
-                pd.Series(index=np.concatenate(t), data=np.concatenate(x),
-                          name='WS'),
-                pd.Series(index=np.concatenate(t), data=np.concatenate(y),
-                          name='WD')
+                pd.Series(index=np.concatenate(t), data=np.concatenate(x), name="WS"),
+                pd.Series(index=np.concatenate(t), data=np.concatenate(y), name="WD"),
             )
 
         return None, None
@@ -590,32 +587,32 @@ class Dataset(object):
         from rnlyss.solar import erbs, engerer, hour_angle, sunset_hour_angle
 
         # Extract downwelling SW at surface
-        Et = self('rsds', lat, lon, years=years)
+        Et = self("rsds", lat, lon, years=years)
         if Et is None:
             return None
         # Can have negative (looking at you CFSR)
         Et = Et.clip_lower(0)
 
         # Extract downwelling shortwave at top-of-atmosphere
-        E0h = self('rsdt', lat, lon, years=years)
+        E0h = self("rsdt", lat, lon, years=years)
         if E0h is None:
             return None
         E0h = E0h.clip_lower(0)
 
         # Extract maximum E0h, representing E0
-        E0 = self.max('rsdt', years=years)
+        E0 = self.max("rsdt", years=years)
         if E0 is None:
             return None
 
         # Extract downwelling clear-sky at surface
         # (if not available, Erbs?)
-        Etc = self('rsdsc', lat, lon, years=years)
+        Etc = self("rsdsc", lat, lon, years=years)
         if Etc is None:
             return None
         Etc = Etc.clip_lower(0)
 
         # UTC
-        utc = Et.index.values - np.timedelta64(30, 'm')
+        utc = Et.index.values - np.timedelta64(30, "m")
 
         # Calculate solar orbit; equation of time
         sinDec, cosDec, eot, solFactor = self.solar_orbit(utc)
@@ -628,7 +625,7 @@ class Dataset(object):
         h0 = sunset_hour_angle(np.sin(lat), np.cos(lat), sinDec, cosDec)
 
         # Add 30 minutes
-        h0 += 0.5*np.pi/12
+        h0 += 0.5 * np.pi / 12
 
         # Avoid division by zero, sensible fluxes, and ensure daytime
         # NB. The last check is because CFS returns some non-zero fluxes
@@ -636,27 +633,27 @@ class Dataset(object):
         i = (E0h > 0) & (Et > 0) & (Etc > 0) & (E0h > Et) & (np.abs(h) < h0)
 
         # Calculate altitude
-        z = E0h[i]/E0[i]
+        z = E0h[i] / E0[i]
 
         # Calculate clear sky clearness index
-        Ktc = np.clip(Etc[i]/E0h[i], 0, 1)
+        Ktc = np.clip(Etc[i] / E0h[i], 0, 1)
 
         # Calculate all sky clearness index
-        Kt = np.clip(Et[i]/E0h[i], 0, 1)
+        Kt = np.clip(Et[i] / E0h[i], 0, 1)
 
         # Engerer diffuse split
         Kd = engerer(Kt, Ktc, z, h[i.values])
 
         # Beam normal coefficient
-        Kn = Kt*(1-Kd)
+        Kn = Kt * (1 - Kd)
 
         # Diffuse
-        Ed = pd.Series(index=Et.index, data=0, name='Ed')
-        Ed[i] = Kd*Et[i]
+        Ed = pd.Series(index=Et.index, data=0, name="Ed")
+        Ed[i] = Kd * Et[i]
 
         # Beam normal
-        Eb = pd.Series(index=Et.index, data=0, name='Eb')
-        Eb[i] = Kn*E0[i]
+        Eb = pd.Series(index=Et.index, data=0, name="Eb")
+        Eb[i] = Kn * E0[i]
 
         # Correct surface and TOA horizontal for export
         E0h[~i] = 0
@@ -664,31 +661,37 @@ class Dataset(object):
         Etc[~i] = 0
 
         if plot:
-            plt.rc('text', usetex=True)
-            plt.rc('text.latex', unicode=True)
-            plt.rc('text.latex', preamble=r'\usepackage{cmbright}')
+            plt.rc("text", usetex=True)
+            plt.rc("text.latex", unicode=True)
+            plt.rc("text.latex", preamble=r"\usepackage{cmbright}")
             f, ax = plt.subplots(figsize=(5, 5), dpi=200)
-            ax.plot(Kt, Kd, '.', color='orange', markersize=2,
-                    label="Engerer2")
+            ax.plot(Kt, Kd, ".", color="orange", markersize=2, label="Engerer2")
             x = np.linspace(0, 1, 100)
             y = erbs(x)
-            ax.plot(x, y, '-', label='Erbs')
+            ax.plot(x, y, "-", label="Erbs")
             ax.set_xlim(0, 1)
             ax.set_ylim(0, 1)
-            leg = ax.legend(loc='upper right', markerscale=4, numpoints=1,
-                            fontsize='smaller')
+            leg = ax.legend(
+                loc="upper right", markerscale=4, numpoints=1, fontsize="smaller"
+            )
             for line in leg.get_lines():
                 line.set_linewidth(2.0)
-            ax.set_xlabel(r"Clearness Index $K_t$", fontsize='smaller')
-            ax.set_ylabel(r"Diffuse Fraction $K_d$", fontsize='smaller')
-            ax.text(0.02, 0.02, "%d points" % (len(Kt),),
-                    ha="left", va="bottom", transform=ax.transAxes)
+            ax.set_xlabel(r"Clearness Index $K_t$", fontsize="smaller")
+            ax.set_ylabel(r"Diffuse Fraction $K_d$", fontsize="smaller")
+            ax.text(
+                0.02,
+                0.02,
+                "%d points" % (len(Kt),),
+                ha="left",
+                va="bottom",
+                transform=ax.transAxes,
+            )
             plt.tight_layout()
-            f.savefig("solar_split_%s.png" % str(self), dpi=f.dpi,
-                      bbox_inches="tight")
+            f.savefig("solar_split_%s.png" % str(self), dpi=f.dpi, bbox_inches="tight")
 
-        return pd.DataFrame({"E0": E0, "E0h": E0h, "Et": Et, "Etc": Etc,
-                             "Eb": Eb, "Ed": Ed})
+        return pd.DataFrame(
+            {"E0": E0, "E0h": E0h, "Et": Et, "Etc": Etc, "Eb": Eb, "Ed": Ed}
+        )
 
     def to_prec(self, lat, lon, years=None, order=1):
         """
@@ -698,13 +701,13 @@ class Dataset(object):
         """
 
         # Grab hourly precipitation (kg/m2/s)
-        pr = self('pr', lat, lon, years=years, order=order, offset=-30)
+        pr = self("pr", lat, lon, years=years, order=order, offset=-30)
 
         # Convert to mm/hr
         pr *= 3600
 
         # Aggregate to monthly sum
-        pr = pr.resample("M", how='sum')
+        pr = pr.resample("M", how="sum")
 
         # Pivot
         pt = pd.pivot(pr.index.year, pr.index.month, pr)
@@ -722,7 +725,7 @@ class Dataset(object):
         """
 
         # Grab hourly global horizontal radiation (W/m2)
-        E = self('rsds', lat, lon, years=years, order=order, offset=-30)
+        E = self("rsds", lat, lon, years=years, order=order, offset=-30)
 
         # Aggregate to daily sum
         E = E.resample("D", how="sum")
@@ -734,28 +737,28 @@ class Dataset(object):
         pt = pd.pivot(E.index.year, E.index.month, E)
 
         # Convert to kW·hr/m²/day
-        return pt/1000.0
+        return pt / 1000.0
 
     def clear_sky_index(self, lat, lon, years=None, order=0, alt_lim=5):
 
         # Extract downwelling clear-sky at surface
-        Ec = self('rsdsc', lat, lon, years=years, order=order)
+        Ec = self("rsdsc", lat, lon, years=years, order=order)
         if Ec is None:
             return None
 
         # Extract downwelling shortwave at top-of-atmosphere
-        E0h = self('rsdt', lat, lon, years=years, order=order)
+        E0h = self("rsdt", lat, lon, years=years, order=order)
         if E0h is None:
             return None
 
         # Extract maximum E0h, representing E0
-        E0 = self.max('rsdt', years=years)
+        E0 = self.max("rsdt", years=years)
         if E0 is None:
             return None
 
         # Calculate altitude
-        z = E0h/E0
-        z.name = 'z'
+        z = E0h / E0
+        z.name = "z"
 
         # Limit where Ec > 0, E0h > 0, and z > zLimit (5deg)
         zLim = np.sin(np.radians(alt_lim))
@@ -763,14 +766,15 @@ class Dataset(object):
         z = z[i]
 
         # Calculate clearness index
-        Kt = Ec[i]/E0h[i]
-        Kt.name = 'Kt'
+        Kt = Ec[i] / E0h[i]
+        Kt.name = "Kt"
 
         # Create aligned dataframe
         return pd.concat([z, Kt], axis=1)
 
-    def to_clearsky(self, lat, lon, years=None, order=0, noon_flux=False,
-                    alt_lim=5, plot=False):
+    def to_clearsky(
+        self, lat, lon, years=None, order=0, noon_flux=False, alt_lim=5, plot=False
+    ):
         """
         Return a DataFrame with the ASHRAE clear sky pseudo-optical
         coefficients given location (lat, lon), selected list of
@@ -781,19 +785,26 @@ class Dataset(object):
         from rnlyss.solar import fit_monthly_taus
 
         # Calculate elevation and clear sky clearness index
-        df = self.clear_sky_index(lat, lon, years=years, order=order,
-                                  alt_lim=alt_lim)
+        df = self.clear_sky_index(lat, lon, years=years, order=order, alt_lim=alt_lim)
 
         # Return fitted monthly taus
         return pd.DataFrame(
             index=range(1, 13),
             data=fit_monthly_taus(
                 df.z, df.Kt, noon_flux=noon_flux, lat=lat, lon=lon, plot=plot
-            )
+            ),
         )
 
-    def to_hof(self, lat, lon, hgt=None, years=None,
-               interp_xy=False, interp_z=False, exact=True):
+    def to_hof(
+        self,
+        lat,
+        lon,
+        hgt=None,
+        years=None,
+        interp_xy=False,
+        interp_z=False,
+        exact=True,
+    ):
         """
         Return a dataframe containing drybulb, dewpoint, station pressure,
         wind speed, wind direction as required for the CSV format
@@ -808,27 +819,27 @@ class Dataset(object):
             order = 0
 
         if interp_z:
-            lapse_rate = -6.5/1000
+            lapse_rate = -6.5 / 1000
         else:
             lapse_rate = None
 
         # Bi-linearly interpolate dry-bulb temperature at site (K)
-        db = self('tas', lat, lon, hgt=hgt, years=years, order=order,
-                  lapse_rate=lapse_rate)
+        db = self(
+            "tas", lat, lon, hgt=hgt, years=years, order=order, lapse_rate=lapse_rate
+        )
         if db is None:
             return None
-        db.name = 'DB'
+        db.name = "DB"
 
         if interp_z:
             # Bi-linearly interpolate station pressure (Pa)
             # Calculate pressure scale height based on avg temperature at site
             Tm = db.mean()
-            Hp = 287.042*Tm/9.80665
+            Hp = 287.042 * Tm / 9.80665
         else:
             Hp = None
-        p = self('ps', lat, lon, hgt=hgt, years=years, order=order,
-                 scale_height=Hp)
-        p.name = 'SP'
+        p = self("ps", lat, lon, hgt=hgt, years=years, order=order, scale_height=Hp)
+        p.name = "SP"
 
         # Convert dry bulb K to C
         db -= 273.15
@@ -838,19 +849,19 @@ class Dataset(object):
             # Scale height for vapor pressure
             Hw = 2500.0
             # Scale height for Y is geometric average of Hw & Hp
-            Hy = (Hw*Hp)/(Hp-Hw)
+            Hy = (Hw * Hp) / (Hp - Hw)
         else:
             Hy = None
 
-        Y = self('huss', lat, lon, hgt=hgt, years=years,
-                 order=order, scale_height=Hy)
+        Y = self("huss", lat, lon, hgt=hgt, years=years, order=order, scale_height=Hy)
 
         # Calculate vapor pressure (Pa) from specific humidity and pressure
         pw = calc_vapor_pressure(Y, p=p)
 
         # Calculate dew point temperature (C) from vapor pressure
-        dp = pd.Series(data=calc_dew_point_temperature(pw, exact=exact),
-                       index=pw.index, name='DP')
+        dp = pd.Series(
+            data=calc_dew_point_temperature(pw, exact=exact), index=pw.index, name="DP"
+        )
 
         # Bi-linearly interpolate wind
         ws, wd = self.wind(lat, lon, order=order, years=years)
@@ -860,14 +871,14 @@ class Dataset(object):
 
         # Correct dewpoint > db
         i = df.DB < df.DP
-        df.loc[i, 'DP'] = df.loc[i, 'DB']
+        df.loc[i, "DP"] = df.loc[i, "DB"]
 
         # Return dataframe
         return df
 
     def isvector(self, dvar):
         if dvar in self:
-            return self.dvars[dvar].get('vector', False)
+            return self.dvars[dvar].get("vector", False)
 
     def isscalar(self, dvar):
         if dvar in self:
@@ -875,10 +886,10 @@ class Dataset(object):
 
     def isconstant(self, dvar):
         if dvar in self:
-            return self.dvars[dvar].get('constant', False)
+            return self.dvars[dvar].get("constant", False)
 
     def constants(self):
-        return [k for k, v in self.dvars.items() if v.get('constant', False)]
+        return [k for k, v in self.dvars.items() if v.get("constant", False)]
 
     def take_inventory(self):
         """
@@ -897,7 +908,7 @@ class Dataset(object):
 
     def iter_year(self, years=None):
 
-        available_years = list(range(self.years[0], self.years[1]+1))
+        available_years = list(range(self.years[0], self.years[1] + 1))
 
         if years is None:
             years = available_years
@@ -911,7 +922,7 @@ class Dataset(object):
 
     def iter_month(self, year, months=None):
 
-        available_months = range(1, 12+1)
+        available_months = range(1, 12 + 1)
 
         if months is None:
             months = available_months
@@ -970,9 +981,7 @@ class Dataset(object):
 
             if len(index):
                 stacked[dvar] = pd.DataFrame(
-                    data=np.vstack(data),
-                    index=index,
-                    columns=range(1, 13)
+                    data=np.vstack(data), index=index, columns=range(1, 13)
                 )
 
         return stacked
@@ -983,5 +992,5 @@ def test():
     b = load_dataset("banana")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test()

@@ -23,6 +23,7 @@ except ImportError:
 
 class MERRA2(Dataset):
 
+    # fmt: off
     dvars = {
         # Dry bulb temperature @ 2m, 10m (K)
         'T2M': {'role': 'tas', 'scale': 1e-2, 'offset': 330,
@@ -88,18 +89,21 @@ class MERRA2(Dataset):
         # Precipitable water (kg/m²)
         'TQV': {'role': 'pwat', 'scale': 1e-2,
                 'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
+        # Ozone (Dobsons)
+        'TO3': {'role': 'ozone', 'scale': 1e-2, 'offset': 320,
+                'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
         # Albedo (0 to 1)
         'ALBEDO': {'role': 'albedo', 'scale': 1e-4,
                    'collection': 'tavg1_2d_rad_Nx', 'hour0': 1},
         # Aerosol Angstrom exponent (0 to 1)
-        #'TOTANGSTR': {'role': 'alpha', 'scale': 1e-4,
-        #              'collection': 'tavg1_2d_aer_Nx', 'hour0': 1},
+        'TOTANGSTR': {'role': 'alpha', 'scale': 1e-4,
+                      'collection': 'tavg1_2d_aer_Nx', 'hour0': 1},
         # Aerosol optical depth @ 550nm (0 to 1)
         'TOTEXTTAU': {'role': 'aod550', 'scale': 1e-4,
                       'collection': 'tavg1_2d_aer_Nx', 'hour0': 1},
         # Aerosol scattering (0 to 1)
-        #'TOTSCATAU': {'role': 'scatter', 'scale': 1e-4,
-        #              'collection': 'tavg1_2d_aer_Nx', 'hour0': 1},
+        'TOTSCATAU': {'role': 'scatter', 'scale': 1e-4,
+                      'collection': 'tavg1_2d_aer_Nx', 'hour0': 1},
         #  Surface roughness (m); store log(z0)
         # 'Z0M': {'role': 'z0', 'scale': 1e-3, 'converter': lambda x: np.log(x),
         #        'collection': 'tavg1_2d_flx_Nx', 'hour0': 1},
@@ -107,18 +111,17 @@ class MERRA2(Dataset):
         # 'PBLH': {'role': 'pblh', 'scale': 1,
         #        'collection': 'tavg1_2d_flx_Nx', 'hour0': 1},
         # Surface flux Richardson number (-)
-        #'RISFC': {'role': 'rif', 'scale': 1e-2,
+        # 'RISFC': {'role': 'rif', 'scale': 1e-2,
         #        'collection': 'tavg1_2d_flx_Nx', 'hour0': 1},
     }
+    # fmt: on
 
     # Time
     years = [1980, None]
     freq = 1
 
     # Grid
-    grid = Grid(
-        shape=(361, 576), origin=(-90, -180), delta=(1/2, 5/8)
-    )
+    grid = Grid(shape=(361, 576), origin=(-90, -180), delta=(1 / 2, 5 / 8))
 
     def land(self, lat, lon, order=0):
         """
@@ -129,13 +132,11 @@ class MERRA2(Dataset):
 
         MERRA-2 is FRLAND+FRLANDICE
         """
-        return (
-            self('frland', lat, lon, order=order) +
-            self('frlandice', lat, lon, order=order)
+        return self("frland", lat, lon, order=order) + self(
+            "frlandice", lat, lon, order=order
         )
 
-    def stack(self, dvars=None, years=None, months=None, force=False,
-              **kwargs):
+    def stack(self, dvars=None, years=None, months=None, force=False, **kwargs):
         """
         Fill element HDF with available GRB data.
         """
@@ -143,20 +144,20 @@ class MERRA2(Dataset):
         if dvars is None:
             dvars = list(self.dvars.keys())
 
-        nc_path = self.get_data_path('nc4')
+        nc_path = self.get_data_path("nc4")
 
         for dvar in sorted(dvars):
 
             # Check dvar
             if dvar not in self:
-                print('%s not in dataset... skipping' % dvar)
+                print("%s not in dataset... skipping" % dvar)
                 continue
 
             # Get converter
-            converter = self.dvars[dvar].get('converter', None)
+            converter = self.dvars[dvar].get("converter", None)
 
             # Get hour0
-            hour0 = self.dvars[dvar].get('hour0', 0)
+            hour0 = self.dvars[dvar].get("hour0", 0)
 
             # Special case: constant
             if self.isconstant(dvar):
@@ -172,13 +173,13 @@ class MERRA2(Dataset):
                         )
 
                     if slab.isfull(0) and not force:
-                        print(dvar, 'already stacked... skipping')
+                        print(dvar, "already stacked... skipping")
                         continue
 
-                    path = os.path.join(nc_path, dvar + '.nc4')
+                    path = os.path.join(nc_path, dvar + ".nc4")
 
                     if not os.path.isfile(path):
-                        print(dvar, 'missing... skipping')
+                        print(dvar, "missing... skipping")
                         continue
 
                     # Retrieve slice from netcdf4 file
@@ -198,19 +199,16 @@ class MERRA2(Dataset):
                     shape = self.grid.shape
 
                 if self.isvector(dvar):
-                    shape = self.grid.shape + (2, )
+                    shape = self.grid.shape + (2,)
 
                 with self[dvar, year] as slab:
 
                     if slab:
-                        print(dvar, 'exists... updating')
+                        print(dvar, "exists... updating")
                     else:
-                        print(dvar, 'does not exist... creating')
+                        print(dvar, "does not exist... creating")
                         slab.create(
-                            shape=shape,
-                            year=year,
-                            freq=self.freq,
-                            **self.dvars[dvar]
+                            shape=shape, year=year, freq=self.freq, **self.dvars[dvar]
                         )
 
                     for month in self.iter_month(year, months):
@@ -223,14 +221,14 @@ class MERRA2(Dataset):
                         # Number of hours in month
                         nh = slab.month_len(month)
 
-                        if slab.isfull(np.s_[i:(i+nh)]) and not force:
-                            print(year, month, 'already stacked... skipping')
+                        if slab.isfull(np.s_[i : (i + nh)]) and not force:
+                            print(year, month, "already stacked... skipping")
                             continue
 
                         # Check that all days are available in this month
 
                         complete = True
-                        for day in range(1, nh//24+1):
+                        for day in range(1, nh // 24 + 1):
                             fn = self.get_nc4_filename(dvar, year, month, day)
                             if not os.path.isfile(fn):
                                 complete = False
@@ -238,45 +236,39 @@ class MERRA2(Dataset):
 
                         # Don't build unless complete
                         if not complete:
-                            print(year, month, 'incomplete... skipping')
+                            print(year, month, "incomplete... skipping")
                             continue
 
                         # Store entire month
-                        shape = self.grid.shape + (nh, )
+                        shape = self.grid.shape + (nh,)
                         X = np.zeros(shape, dtype=np.int16)
 
                         # Have full month; build
                         h = 0
-                        for day in range(1, nh//24+1):
+                        for day in range(1, nh // 24 + 1):
                             fn = self.get_nc4_filename(dvar, year, month, day)
                             print(fn)
                             with netCDF4.Dataset(fn) as nc:
                                 x = np.transpose(
-                                    slab.to_int(
-                                        nc.variables[dvar][:],
-                                        converter
-                                    ),
-                                    (1, 2, 0)
+                                    slab.to_int(nc.variables[dvar][:], converter),
+                                    (1, 2, 0),
                                 )
 
-                            X[..., h:(h+24)] = x
+                            X[..., h : (h + 24)] = x
                             h += 24
 
                         # Store month
-                        print(year, month, 'complete... writing', flush=True)
+                        print(year, month, "complete... writing", flush=True)
                         slab.fill(i, X)
                         X = None
 
                         # Write to syslog
                         syslog_elapsed_time(
                             time.time() - start_time,
-                            "%s %s %04d-%02d written." % (
-                                str(self), dvar, year, month
-                            )
+                            "%s %s %04d-%02d written." % (str(self), dvar, year, month),
                         )
 
-    def download(self, dvars=None, years=None, months=None, ignore=False,
-                 **kwargs):
+    def download(self, dvars=None, years=None, months=None, ignore=False, **kwargs):
         """
         Download MERRA files.
         """
@@ -302,29 +294,27 @@ class MERRA2(Dataset):
                 if request.status_code == 200:
                     break
                 print(
-                    "%s unreachable (%d)... " % (dst, request.status_code),
-                    "retrying"
+                    "%s unreachable (%d)... " % (dst, request.status_code), "retrying"
                 )
 
             else:
                 print(
-                    "%s unavailable (%d)... " % (dst, request.status_code),
-                    "skipping"
+                    "%s unavailable (%d)... " % (dst, request.status_code), "skipping"
                 )
 
                 return False
 
-            content_length = int(request.headers['Content-Length'])
+            content_length = int(request.headers["Content-Length"])
 
             print(
                 "%s available... " % dst,
                 "downloading %d bytes" % content_length,
-                flush=True
+                flush=True,
             )
 
             try:
                 # Stream to file
-                shutil.copyfileobj(request.raw, open(dst, 'wb'))
+                shutil.copyfileobj(request.raw, open(dst, "wb"))
 
             except:
                 # Problem; delete file
@@ -342,11 +332,11 @@ class MERRA2(Dataset):
             constants = self.constants()
 
             for dvar in constants:
-                fn = os.path.join(self.get_data_path('nc4'), "%s.nc4" % dvar)
+                fn = os.path.join(self.get_data_path("nc4"), "%s.nc4" % dvar)
                 if not os.path.isfile(fn):
                     break
             else:
-                print('All constants downloaded and extracted')
+                print("All constants downloaded and extracted")
                 return
 
             fn = "MERRA2_101.const_2d_asm_Nx.00000000.nc4"
@@ -355,10 +345,10 @@ class MERRA2(Dataset):
             url += r"data/MERRA2_MONTHLY/M2C0NXASM.5.12.4/1980/"
             url += fn
 
-            dst = os.path.join(self.get_data_path('nc4'), fn)
+            dst = os.path.join(self.get_data_path("nc4"), fn)
 
             # Ensure netcdf directory exists
-            os.makedirs(self.get_data_path('nc4'), exist_ok=True)
+            os.makedirs(self.get_data_path("nc4"), exist_ok=True)
 
             # Grab constant file
             if not get_file(url, dst):
@@ -376,13 +366,11 @@ class MERRA2(Dataset):
                 for dvar in constants:
                     if dvar in nc_in.variables:
                         print("Extracting %s" % dvar)
-                        fn = os.path.join(
-                            self.get_data_path('nc4', "%s.nc4" % dvar)
-                        )
+                        fn = os.path.join(self.get_data_path("nc4", "%s.nc4" % dvar))
                         with netCDF4.Dataset(fn, "w") as nc_out:
-                            nc_out.setncatts({
-                                k: nc_in.getncattr(k) for k in nc_in.ncattrs()
-                            })
+                            nc_out.setncatts(
+                                {k: nc_in.getncattr(k) for k in nc_in.ncattrs()}
+                            )
                             for k, v in nc_in.dimensions.items():
                                 nc_out.createDimension(
                                     k, len(v) if not v.isunlimited() else None
@@ -395,11 +383,11 @@ class MERRA2(Dataset):
                 os.remove(dst)
 
         shortnames = {
-            'inst1_2d_asm_Nx': 'M2I1NXASM',
-            'tavg1_2d_slv_Nx': 'M2T1NXSLV',
-            'tavg1_2d_rad_Nx': 'M2T1NXRAD',
-            'tavg1_2d_flx_Nx': 'M2T1NXFLX',
-            'tavg1_2d_aer_Nx': 'M2T1NXAER',
+            "inst1_2d_asm_Nx": "M2I1NXASM",
+            "tavg1_2d_slv_Nx": "M2T1NXSLV",
+            "tavg1_2d_rad_Nx": "M2T1NXRAD",
+            "tavg1_2d_flx_Nx": "M2T1NXFLX",
+            "tavg1_2d_aer_Nx": "M2T1NXAER",
         }
 
         def get_hourly_file(dvar, year, month, day):
@@ -412,15 +400,15 @@ class MERRA2(Dataset):
 
             # Determine stream;
             if year <= 1991:
-                stream = '100'
+                stream = "100"
             elif 1991 < year <= 2000:
-                stream = '200'
+                stream = "200"
             elif 2000 < year <= 2010:
-                stream = '300'
+                stream = "300"
             else:
-                stream = '400'
+                stream = "400"
 
-            collection = self.dvars[dvar].get('collection', 'inst1_2d_asm_Nx')
+            collection = self.dvars[dvar].get("collection", "inst1_2d_asm_Nx")
 
             shortname = shortnames[collection]
 
@@ -441,9 +429,7 @@ class MERRA2(Dataset):
                 return False
 
             # Assume that if we have a file of the same date we can skip
-            last_modified = mktime_tz(
-                parsedate_tz(request.headers['Last-Modified'])
-            )
+            last_modified = mktime_tz(parsedate_tz(request.headers["Last-Modified"]))
             if os.path.isfile(dst):
                 if int(os.path.getmtime(dst)) == last_modified:
                     print("%s unchanged... skipping" % dst)
@@ -458,7 +444,7 @@ class MERRA2(Dataset):
                 "SERVICE": "SUBSET_MERRA2",
                 "VERSION": "1.02",
                 "LAYERS": "",
-                "VARIABLES": "%s" % dvar.upper()
+                "VARIABLES": "%s" % dvar.upper(),
             }
 
             url = r"http://goldsmr4.gesdisc.eosdis.nasa.gov/"
@@ -475,7 +461,7 @@ class MERRA2(Dataset):
         # Release the sloths...
         for dvar in sorted(dvars):
             if dvar not in self:
-                print('%s not in dataset... skipping' % dvar)
+                print("%s not in dataset... skipping" % dvar)
                 continue
 
             print(dvar)
@@ -487,7 +473,7 @@ class MERRA2(Dataset):
             else:
                 # Hourly file
                 for year, month in self.iter_year_month(years, months):
-                    days = range(1, calendar.monthrange(year, month)[1]+1)
+                    days = range(1, calendar.monthrange(year, month)[1] + 1)
                     for day in days:
                         get_hourly_file(dvar, year, month, day)
 
@@ -495,10 +481,10 @@ class MERRA2(Dataset):
 
     def get_nc4_filename(self, dvar, year, month, day):
         return os.path.join(
-            self.get_data_path('nc4'),
+            self.get_data_path("nc4"),
             "%04d" % year,
             "%02d" % month,
-            "%s.%04d%02d%02d.nc4" % (dvar, year, month, day)
+            "%s.%04d%02d%02d.nc4" % (dvar, year, month, day),
         )
 
 
@@ -509,12 +495,12 @@ def main():
 
     # Extract air temperature at 2m at a given location into a Pandas Series
     # (return the nearest location)
-    x = M('tas', 33.640, -84.430)
+    x = M("tas", 33.640, -84.430)
     print(x.head())
 
     # The same call but applying bi-linear interpolation of the surrounding
     # 4 grid locations and restricting data to the year 2018.
-    y = M('tas', 33.640, -84.430, hgt=313, order=1, years=[2018])
+    y = M("tas", 33.640, -84.430, hgt=313, order=1, years=[2018])
     print(y.head())
 
     # Calculate the ASHRAE tau coefficients and optionally the fluxes at noon
@@ -533,5 +519,5 @@ def main():
     print(solar[12:24])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

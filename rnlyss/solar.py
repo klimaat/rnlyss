@@ -14,21 +14,21 @@ def join_date(y=1970, m=1, d=1, hh=0, mm=0, ss=0):
     Join date/time components into datetime64 object
     """
     y = (np.asarray(y) - 1970).astype("<M8[Y]")
-    m = (np.asarray(m)-1).astype("<m8[M]")
-    d = (np.asarray(d)-1).astype("<m8[D]")
+    m = (np.asarray(m) - 1).astype("<m8[M]")
+    d = (np.asarray(d) - 1).astype("<m8[D]")
     hh = np.asarray(hh).astype("<m8[h]")
     mm = np.asarray(mm).astype("<m8[m]")
     ss = np.asarray(ss).astype("<m8[s]")
-    return y+m+d+hh+mm+ss
+    return y + m + d + hh + mm + ss
 
 
 def split_date(dates):
     """
     Split datetime64 dates into year, month, day components.
     """
-    y = dates.astype('<M8[Y]').astype(int) + 1970
-    m = dates.astype('<M8[M]').astype(int) % 12 + 1
-    d = (dates - dates.astype('<M8[M]')).astype("<m8[D]").astype(int) + 1
+    y = dates.astype("<M8[Y]").astype(int) + 1970
+    m = dates.astype("<M8[M]").astype(int) % 12 + 1
+    d = (dates - dates.astype("<M8[M]")).astype("<m8[D]").astype(int) + 1
     return y, m, d
 
 
@@ -36,9 +36,9 @@ def split_time(dates):
     """
     Split datetime64 dates into hour, minute, second components.
     """
-    hh = (dates - dates.astype('<M8[D]')).astype("<m8[h]").astype(int)
-    mm = (dates - dates.astype('<M8[h]')).astype("<m8[m]").astype(int)
-    ss = (dates - dates.astype('<M8[m]')).astype("<m8[s]").astype(int)
+    hh = (dates - dates.astype("<M8[D]")).astype("<m8[h]").astype(int)
+    mm = (dates - dates.astype("<M8[h]")).astype("<m8[m]").astype(int)
+    ss = (dates - dates.astype("<M8[m]")).astype("<m8[s]").astype(int)
     return hh, mm, ss
 
 
@@ -46,7 +46,7 @@ def day_of_year(dates, snap=True):
     """
     Calculate the day of the year (0-365/366)
     """
-    dt = np.asarray(dates)-dates.astype('<M8[Y]')
+    dt = np.asarray(dates) - dates.astype("<M8[Y]")
     if snap:
         # Provide value at noon (integer)
         # Jan 1st anytime = 1
@@ -54,7 +54,7 @@ def day_of_year(dates, snap=True):
     else:
         # Provide value including fractional part (float)
         # Jan 1st at 00:00 = 0, Jan 1st at noon = 0.5
-        return dt.astype("<m8[s]").astype(int)/86400
+        return dt.astype("<m8[s]").astype(int) / 86400
 
 
 def julian_day(dates):
@@ -64,14 +64,14 @@ def julian_day(dates):
 
     # Get Julian Day number
     y, m, d = split_date(dates)
-    a = (14-m)//12
+    a = (14 - m) // 12
     y += 4800 - a
-    m += 12*a - 3
-    jd = d + ((153*m + 2)//5) + 365*y + y//4 - y//100 + y//400 - 32045
+    m += 12 * a - 3
+    jd = d + ((153 * m + 2) // 5) + 365 * y + y // 4 - y // 100 + y // 400 - 32045
 
     # Get fractional day (noon=0)
     hh, mm, ss = split_time(dates)
-    fd = (hh-12)/24 + mm/1440 + ss/86400
+    fd = (hh - 12) / 24 + mm / 1440 + ss / 86400
 
     return jd, fd
 
@@ -87,18 +87,23 @@ def orbit_ashrae(utc):
     n = day_of_year(utc, snap=True)
 
     # Declination (eqn. 10, radians)
-    decl = np.radians(23.45*np.sin(2*np.pi*(n+284)/365))
+    decl = np.radians(23.45 * np.sin(2 * np.pi * (n + 284) / 365))
 
     # Equation of time (eqns 5 & 6, min)
-    gamma = 2*np.pi*(n-1)/365
-    eqnOfTime = 2.2918*(0.0075 + 0.1868*np.cos(gamma) - 3.2077*np.sin(gamma) -
-                        1.4615*np.cos(2*gamma) - 4.089*np.sin(2*gamma))
+    gamma = 2 * np.pi * (n - 1) / 365
+    eqnOfTime = 2.2918 * (
+        0.0075
+        + 0.1868 * np.cos(gamma)
+        - 3.2077 * np.sin(gamma)
+        - 1.4615 * np.cos(2 * gamma)
+        - 4.089 * np.sin(2 * gamma)
+    )
 
     # Convert from minutes to radians
-    eqnOfTime *= np.pi/(60*12)
+    eqnOfTime *= np.pi / (60 * 12)
 
     # Solar constant correction
-    solFactor = 1 + 0.033*np.cos(np.radians(360*(n-3)/365))
+    solFactor = 1 + 0.033 * np.cos(np.radians(360 * (n - 3) / 365))
 
     return np.sin(decl), np.cos(decl), eqnOfTime, solFactor
 
@@ -114,42 +119,46 @@ def orbit_energyplus(utc):
     n = day_of_year(utc, snap=True)
 
     # Day Angle
-    D = 2*np.pi*n/366.0
+    D = 2 * np.pi * n / 366.0
 
     sinD = np.sin(D)
     cosD = np.cos(D)
 
     # Calculate declination sines & cosines
 
-    sinDec = 0.00561800 \
-        + 0.0657911*sinD \
-        - 0.392779*cosD \
-        + 0.00064440*(sinD*cosD*2.0) \
-        - 0.00618495*(cosD**2 - sinD**2) \
-        - 0.00010101*(sinD*(cosD**2-sinD**2) + cosD*(sinD*cosD*2.0)) \
-        - 0.00007951*(cosD*(cosD**2-sinD**2) - sinD*(sinD*cosD*2.0)) \
-        - 0.00011691*(2.0*(sinD*cosD*2.0)*(cosD**2 - sinD**2)) \
-        + 0.00002096*((cosD**2-sinD**2)**2 - (sinD*cosD*2.0)**2)
+    sinDec = (
+        0.00561800
+        + 0.0657911 * sinD
+        - 0.392779 * cosD
+        + 0.00064440 * (sinD * cosD * 2.0)
+        - 0.00618495 * (cosD ** 2 - sinD ** 2)
+        - 0.00010101 * (sinD * (cosD ** 2 - sinD ** 2) + cosD * (sinD * cosD * 2.0))
+        - 0.00007951 * (cosD * (cosD ** 2 - sinD ** 2) - sinD * (sinD * cosD * 2.0))
+        - 0.00011691 * (2.0 * (sinD * cosD * 2.0) * (cosD ** 2 - sinD ** 2))
+        + 0.00002096 * ((cosD ** 2 - sinD ** 2) ** 2 - (sinD * cosD * 2.0) ** 2)
+    )
 
-    cosDec = np.sqrt(1-sinDec**2)
+    cosDec = np.sqrt(1 - sinDec ** 2)
 
     # Equation of time (hours)
 
-    eqnOfTime = 0.00021971 \
-        - 0.122649*sinD \
-        + 0.00762856 * cosD \
-        - 0.156308 * (sinD*cosD*2.0) \
-        - 0.0530028 * (cosD**2 - sinD**2) \
-        - 0.00388702 * (sinD*(cosD**2 - sinD**2) + cosD*(sinD*cosD*2.0)) \
-        - 0.00123978 * (cosD * (cosD**2 - sinD**2) - sinD*(sinD*cosD*2.0)) \
-        - 0.00270502 * (2.0*(sinD*cosD*2.0)*(cosD**2 - sinD**2)) \
-        - 0.00167992 * ((cosD**2 - sinD**2)**2 - (sinD*cosD*2.0)**2)
+    eqnOfTime = (
+        0.00021971
+        - 0.122649 * sinD
+        + 0.00762856 * cosD
+        - 0.156308 * (sinD * cosD * 2.0)
+        - 0.0530028 * (cosD ** 2 - sinD ** 2)
+        - 0.00388702 * (sinD * (cosD ** 2 - sinD ** 2) + cosD * (sinD * cosD * 2.0))
+        - 0.00123978 * (cosD * (cosD ** 2 - sinD ** 2) - sinD * (sinD * cosD * 2.0))
+        - 0.00270502 * (2.0 * (sinD * cosD * 2.0) * (cosD ** 2 - sinD ** 2))
+        - 0.00167992 * ((cosD ** 2 - sinD ** 2) ** 2 - (sinD * cosD * 2.0) ** 2)
+    )
 
     # Convert to radians
-    eqnOfTime = np.pi*eqnOfTime/12
+    eqnOfTime = np.pi * eqnOfTime / 12
 
     # Solar constant correction factor
-    solFactor = 1.000047 + 0.000352615*sinD + 0.0334454*cosD
+    solFactor = 1.000047 + 0.000352615 * sinD + 0.0334454 * cosD
 
     return sinDec, cosDec, eqnOfTime, solFactor
 
@@ -177,11 +186,11 @@ def orbit_cfsr(utc):
     svt6 = 78.035
 
     # Julian centuries after epoch
-    t1 = (jd - jdor)/36525.0
+    t1 = (jd - jdor) / 36525.0
 
     # Length of anomalistic and tropical years (minus 365 days)
     ayear = 0.25964134e0 + 0.304e-5 * t1
-    tyear = 0.24219879E0 - 0.614e-5 * t1
+    tyear = 0.24219879e0 - 0.614e-5 * t1
 
     # Orbit eccentricity and earth's inclination (deg)
     ec = 0.01675104e0 - (0.418e-4 + 0.126e-6 * t1) * t1
@@ -200,7 +209,7 @@ def orbit_cfsr(utc):
     er = np.sqrt((1 + ec) / (1 - ec))
 
     # mean anomaly
-    qq = deleqn * 2*np.pi / ayear
+    qq = deleqn * 2 * np.pi / ayear
 
     def solve_kepler(e, M, E=1, eps=1.3e-6):
         """
@@ -208,7 +217,7 @@ def orbit_cfsr(utc):
         based on eccentricity e and mean anomaly M
         """
         for i in range(10):
-            dE = -(E-e*np.sin(E)-M)/(1-e*np.cos(E))
+            dE = -(E - e * np.sin(E) - M) / (1 - e * np.cos(E))
             E += dE
             dEmax = np.max(np.abs(dE))
             if dEmax < eps:
@@ -221,46 +230,46 @@ def orbit_cfsr(utc):
     e1 = solve_kepler(ec, qq)
 
     # True anomaly at equinox
-    eq = 2.0 * np.arctan(er*np.tan(0.5*e1))
+    eq = 2.0 * np.arctan(er * np.tan(0.5 * e1))
 
     # Date is days since last perihelion passage
     dat = jd - jdor - tpp + fjd
     date = dat % ayear
 
     # Mean anomaly
-    em = 2*np.pi * date / ayear
+    em = 2 * np.pi * date / ayear
 
     # Eccentric anomaly
     e1 = solve_kepler(ec, em)
 
     # True anomaly
-    w1 = 2.0 * np.arctan(er*np.tan(0.5*e1))
+    w1 = 2.0 * np.arctan(er * np.tan(0.5 * e1))
 
     # Earth-Sun radius relative to mean radius
-    r1 = 1.0 - ec*np.cos(e1)
+    r1 = 1.0 - ec * np.cos(e1)
 
     # Sine of declination angle
     # NB. ecliptic longitude = w1 - eq
     sdec = sni * np.sin(w1 - eq)
 
     # Cosine of declination angle
-    cdec = np.sqrt(1.0 - sdec*sdec)
+    cdec = np.sqrt(1.0 - sdec * sdec)
 
     # Sun declination (radians)
     dlt = np.arcsin(sdec)
 
     # Sun right ascension (radians)
-    alp = np.arcsin(np.tan(dlt)*tini)
-    alp = np.where(np.cos(w1-eq) < 0, np.pi-alp, alp)
-    alp = np.where(alp < 0, alp + 2*np.pi, alp)
+    alp = np.arcsin(np.tan(dlt) * tini)
+    alp = np.where(np.cos(w1 - eq) < 0, np.pi - alp, alp)
+    alp = np.where(alp < 0, alp + 2 * np.pi, alp)
 
     # Equation of time (radians)
-    sun = 2*np.pi*(date - deleqn)/ayear
-    sun = np.where(sun < 0.0, sun+2*np.pi, sun)
+    sun = 2 * np.pi * (date - deleqn) / ayear
+    sun = np.where(sun < 0.0, sun + 2 * np.pi, sun)
     slag = sun - alp - 0.03255
 
     # Solar constant correction factor (inversely with radius squared)
-    solFactor = 1/(r1**2)
+    solFactor = 1 / (r1 ** 2)
 
     return sdec, cdec, slag, solFactor
 
@@ -291,8 +300,7 @@ def orbit_noaa(utc):
 
     # Sun equation of centre (deg)
     ctr = (
-        np.sin(np.radians(gma))
-        * (1.914602 - jc * (0.004817 + 0.000014 * jc))
+        np.sin(np.radians(gma)) * (1.914602 - jc * (0.004817 + 0.000014 * jc))
         + np.sin(np.radians(2 * gma)) * (0.019993 - 0.000101 * jc)
         + np.sin(np.radians(3 * gma)) * 0.000289
     )
@@ -304,15 +312,16 @@ def orbit_noaa(utc):
     sta = gma + ctr
 
     # Sun radius vector (AUs)
-    rad = (1.000001018 * (1 - ecc * ecc)) / (
-        1 + ecc * np.cos(np.radians(sta))
-    )
+    rad = (1.000001018 * (1 - ecc * ecc)) / (1 + ecc * np.cos(np.radians(sta)))
 
     # Sun apparent longitude (deg)
     sal = stl - 0.00569 - 0.00478 * np.sin(np.radians(125.04 - 1934.136 * jc))
 
     # Mean obliquity ecliptic (deg)
-    moe = (23 + (26 + ((21.448 - jc * (46.815 + jc * (0.00059 - jc * 0.001813)))) / 60) / 60)
+    moe = (
+        23
+        + (26 + ((21.448 - jc * (46.815 + jc * (0.00059 - jc * 0.001813)))) / 60) / 60
+    )
 
     # Obliquity correction (deg)
     obl = moe + 0.00256 * np.cos(np.radians(125.04 - 1934.136 * jc))
@@ -320,14 +329,13 @@ def orbit_noaa(utc):
     # Sun right ascension (deg)
     sra = np.degrees(
         np.arctan2(
-            np.cos(np.radians(obl)) * np.sin(np.radians(sal)),
-            np.cos(np.radians(sal)),
+            np.cos(np.radians(obl)) * np.sin(np.radians(sal)), np.cos(np.radians(sal)),
         )
     )
 
     # Sun declination
     sinDec = np.sin(np.radians(obl)) * np.sin(np.radians(sal))
-    cosDec = np.sqrt(1.0 - sinDec*sinDec)
+    cosDec = np.sqrt(1.0 - sinDec * sinDec)
 
     # Var y
     vary = np.tan(np.radians(obl / 2)) * np.tan(np.radians(obl / 2))
@@ -336,20 +344,16 @@ def orbit_noaa(utc):
     eqnOfTime = 4 * np.degrees(
         vary * np.sin(2 * np.radians(gml))
         - 2 * ecc * np.sin(np.radians(gma))
-        + 4
-        * ecc
-        * vary
-        * np.sin(np.radians(gma))
-        * np.cos(2 * np.radians(gml))
+        + 4 * ecc * vary * np.sin(np.radians(gma)) * np.cos(2 * np.radians(gml))
         - 0.5 * vary * vary * np.sin(4 * np.radians(gml))
         - 1.25 * ecc * ecc * np.sin(2 * np.radians(gma))
     )
 
     # Convert from minutes to radians
-    eqnOfTime *= np.pi/(60*12)
+    eqnOfTime *= np.pi / (60 * 12)
 
     # Solar constant correction factor (inversely with radius squared)
-    solFactor = 1/(rad**2)
+    solFactor = 1 / (rad ** 2)
 
     return sinDec, cosDec, eqnOfTime, solFactor
 
@@ -371,7 +375,7 @@ def orbit_merra2(utc):
         perihelion = np.radians(102.0)
         equinox = 80
 
-        omg = (2.0*np.pi/yearlen)/np.sqrt(1-ecc**2)**3
+        omg = (2.0 * np.pi / yearlen) / np.sqrt(1 - ecc ** 2) ** 3
         sob = np.sin(obliquity)
 
         # TH: Orbit anomaly
@@ -381,17 +385,17 @@ def orbit_merra2(utc):
 
         # Integration starting at vernal equinox
         def calc_omega(th):
-            return omg*(1.0-ecc*np.cos(th-perihelion))**2
+            return omg * (1.0 - ecc * np.cos(th - perihelion)) ** 2
 
         orbit = np.recarray(
-            (days_per_cycle, ),
-            dtype=[('th', float), ('zs', float), ('zc', float), ('pp', float)]
+            (days_per_cycle,),
+            dtype=[("th", float), ("zs", float), ("zc", float), ("pp", float)],
         )
 
         def update_orbit(th):
-            zs = np.sin(th)*sob
-            zc = np.sqrt(1.0-zs**2)
-            pp = ((1.0-ecc*np.cos(th-perihelion))/(1.0-ecc**2))**2
+            zs = np.sin(th) * sob
+            zc = np.sqrt(1.0 - zs ** 2)
+            pp = ((1.0 - ecc * np.cos(th - perihelion)) / (1.0 - ecc ** 2)) ** 2
             orbit[kp] = th, zs, zc, pp
 
         # Starting point
@@ -400,13 +404,13 @@ def orbit_merra2(utc):
         update_orbit(th)
 
         # Runge-Kutta
-        for k in range(days_per_cycle-1):
+        for k in range(days_per_cycle - 1):
             t1 = calc_omega(th)
-            t2 = calc_omega(th+0.5*t1)
-            t3 = calc_omega(th+0.5*t2)
-            t4 = calc_omega(th+t3)
+            t2 = calc_omega(th + 0.5 * t1)
+            t3 = calc_omega(th + 0.5 * t2)
+            t4 = calc_omega(th + t3)
             kp = (kp + 1) % days_per_cycle
-            th += (t1 + 2*(t2+t3) + t4)/6.0
+            th += (t1 + 2 * (t2 + t3) + t4) / 6.0
             update_orbit(th)
 
         # Cache it
@@ -420,17 +424,17 @@ def orbit_merra2(utc):
     year, month, day = split_date(utc)
     doy = day_of_year(utc, snap=True)
     iyear = (year - 1) % 4
-    iday = iyear*int(yearlen) + doy - 1
+    iday = iyear * int(yearlen) + doy - 1
 
     # Declination
-    sinDec = orbit['zs'][iday]
-    cosDec = orbit['zc'][iday]
+    sinDec = orbit["zs"][iday]
+    cosDec = orbit["zc"][iday]
 
     # MERRA uses *solar* instead of *clock* time; no equation of time
     eqnOfTime = np.zeros_like(sinDec)
 
     # Inverse square of earth-sun distance ratio to mean distance
-    solFactor = orbit['pp'][iday]
+    solFactor = orbit["pp"][iday]
 
     return sinDec, cosDec, eqnOfTime, solFactor
 
@@ -470,7 +474,7 @@ def total_solar_irradiance_ashrae(utc):
     Return ASHRAE constant solar irradiance value (W/m²)
     """
 
-    return 1367.0*(np.ones_like(utc).astype(float))
+    return 1367.0 * (np.ones_like(utc).astype(float))
 
 
 def total_solar_irradiance_cfsr(utc):
@@ -486,21 +490,23 @@ def total_solar_irradiance_cfsr(utc):
     TSI_datum = 1360.0
 
     # van den Dool data (1979-2006); assumed valid in July of that year
+    # fmt: off
     dTSI = np.array([
         6.70, 6.70, 6.80, 6.60, 6.20, 6.00, 5.70, 5.70, 5.80, 6.20, 6.50,
         6.50, 6.50, 6.40, 6.00, 5.80, 5.70, 5.70, 5.90, 6.40, 6.70, 6.70,
         6.80, 6.70, 6.30, 6.10, 5.90, 5.70
     ])
+    # fmt: on
     n = len(dTSI)
 
     # Index into dTSI (float)
-    i = np.asarray(year).astype(int) - 1979 + (np.asarray(month) - 7)/12
+    i = np.asarray(year).astype(int) - 1979 + (np.asarray(month) - 7) / 12
 
     # Extend backward and/or forward assuming 11-year sunspot cycle
     while np.any(i < 0):
         i[i < 0] += 11
-    while np.any(i > n-1):
-        i[i > n-1] -= 11
+    while np.any(i > n - 1):
+        i[i > n - 1] -= 11
 
     # Add base
     return TSI_datum + np.interp(i, np.arange(n), dTSI)
@@ -515,6 +521,7 @@ def total_solar_irradiance_merra2(utc):
 
     # CMIP5 data (1980-2008), monthly
     # http://solarisheppa.geomar.de/solarisheppa/sites/default/files/data/CMIP5/TSI_WLS_mon_1882_2008.txt
+    # fmt: off
     TSI = np.array([
         [1366.8707, 1366.6385, 1367.0020, 1366.3137, 1366.4717, 1366.7686,
          1366.7025, 1366.6991, 1366.6078, 1366.5760, 1366.1366, 1366.9659],
@@ -575,6 +582,7 @@ def total_solar_irradiance_merra2(utc):
         [1365.7163, 1365.7366, 1365.6726, 1365.7146, 1365.7175, 1365.6730,
          1365.6720, 1365.6570, 1365.6647, 1365.6759, 1365.7065, 1365.6926]
     ])
+    # fmt: on
     n = TSI.shape[0]
 
     # Index year
@@ -584,14 +592,14 @@ def total_solar_irradiance_merra2(utc):
     # 13-year
     while np.any(i < 0):
         i[i < 0] += 11
-    while np.any(i > n-1):
-        i[i > n-1] -= 13
+    while np.any(i > n - 1):
+        i[i > n - 1] -= 13
 
     # Index month
     j = np.asarray(month).astype(int) - 1
 
     # Return index scaled by TIM correction (Total Irradiance Monitor)
-    return 0.9965*TSI[i, j]
+    return 0.9965 * TSI[i, j]
 
 
 def total_solar_irradiance(utc, method=None):
@@ -634,7 +642,7 @@ def hour_angle(lon, utc, eot):
 
     # Local solar hour angle (radians, noon = 0)
     hh, mm, ss = split_time(utc)
-    H = 2*np.pi*((hh-12)/24 + mm/1440 + ss/86400)
+    H = 2 * np.pi * ((hh - 12) / 24 + mm / 1440 + ss / 86400)
 
     # Correct based on equation of time
     H += eot
@@ -643,7 +651,7 @@ def hour_angle(lon, utc, eot):
     H += np.radians(lon)
 
     # Return centered in -pi to pi
-    return ((H + np.pi) % (2*np.pi)) - np.pi
+    return ((H + np.pi) % (2 * np.pi)) - np.pi
 
 
 def sunset_hour_angle(sinLat, cosLat, sinDec, cosDec):
@@ -651,10 +659,10 @@ def sunset_hour_angle(sinLat, cosLat, sinDec, cosDec):
     Calculate local sunset hour angle (radians) given sines and cosines
     of latitude and declination.
     """
-    return np.arccos(np.clip(-sinDec/cosDec*sinLat/cosLat, -1, 1))
+    return np.arccos(np.clip(-sinDec / cosDec * sinLat / cosLat, -1, 1))
 
 
-def position(lat, lon, utc, method='ASHRAE'):
+def position(lat, lon, utc, method="ASHRAE"):
     """
     Calculate solar position (x, y, z) in sky given (lat, lon) and UTC time
     """
@@ -672,9 +680,9 @@ def position(lat, lon, utc, method='ASHRAE'):
     cosLat = np.cos(np.radians(lat))
 
     return (
-        cosDec*sinH,
-        sinDec*cosLat - cosDec*sinLat*cosH,
-        sinDec*sinLat + cosDec*cosLat*cosH
+        cosDec * sinH,
+        sinDec * cosLat - cosDec * sinLat * cosH,
+        sinDec * sinLat + cosDec * cosLat * cosH,
     )
 
 
@@ -691,14 +699,14 @@ def clear_sky_irradiance(z, tb, td, E0):
     # Calculate air mass exponents
     B1, B2, B3, B4 = 1.454, -0.406, -0.286, 0.021
     D1, D2, D3, D4 = 0.507, 0.205, -0.080, -0.190
-    ab = B1 + B2*tb + B3*td + B4*tb*td
-    ad = D1 + D2*tb + D3*td + D4*tb*td
+    ab = B1 + B2 * tb + B3 * td + B4 * tb * td
+    ad = D1 + D2 * tb + D3 * td + D4 * tb * td
 
     # Beam and diffuse irradiance
-    return E0*np.exp(-tb*m**ab), E0*np.exp(-td*m**ad)
+    return E0 * np.exp(-tb * m ** ab), E0 * np.exp(-td * m ** ad)
 
 
-def elevation(lat, lon, utc, method='ASHRAE', interval=None, h=None):
+def elevation(lat, lon, utc, method="ASHRAE", interval=None, h=None):
     """
     Calculate the elevation z and extraterrestrial radiation E0 at
     (lat, lon) and UTC time.
@@ -714,7 +722,7 @@ def elevation(lat, lon, utc, method='ASHRAE', interval=None, h=None):
     sinDec, cosDec, eqnOfTime, solFactor = orbit(utc, method=method)
 
     # Calculate extraterrestrial radiance at UTC
-    E0 = solFactor*total_solar_irradiance(utc, method=method)
+    E0 = solFactor * total_solar_irradiance(utc, method=method)
 
     # Latitudinal sines
     sinLat = np.sin(np.radians(lat))
@@ -724,14 +732,14 @@ def elevation(lat, lon, utc, method='ASHRAE', interval=None, h=None):
         """
         Instant elevation at hour angle h
         """
-        return np.maximum(sinDec*sinLat + cosDec*cosLat*np.cos(h), 0)
+        return np.maximum(sinDec * sinLat + cosDec * cosLat * np.cos(h), 0)
 
     def avg_elevation(h1, h2):
         """
         Integrated elevation between h1 and h2
         """
         return np.maximum(
-            sinLat*sinDec*(h2-h1) + cosLat*cosDec*(np.sin(h2)-np.sin(h1)), 0
+            sinLat * sinDec * (h2 - h1) + cosLat * cosDec * (np.sin(h2) - np.sin(h1)), 0
         )
 
     # Default interval is instantaneous
@@ -756,7 +764,7 @@ def elevation(lat, lon, utc, method='ASHRAE', interval=None, h=None):
         Instantaneous mid-point of previous hour, i.e. approximate average
         """
         # Instantaneous hour angle at 30 minutes prior
-        h = hour_angle(lon, utc - np.timedelta64(30, 'm'), eqnOfTime)
+        h = hour_angle(lon, utc - np.timedelta64(30, "m"), eqnOfTime)
         # Instantaneous elevation
         z = int_elevation(h)
 
@@ -765,21 +773,21 @@ def elevation(lat, lon, utc, method='ASHRAE', interval=None, h=None):
         Hourly
         """
         # Sunset hour angle
-        h0 = np.arccos(np.clip(-sinDec/cosDec*sinLat/cosLat, -1, 1))
+        h0 = np.arccos(np.clip(-sinDec / cosDec * sinLat / cosLat, -1, 1))
         # One hour (radians)
-        dh = np.pi/12
+        dh = np.pi / 12
         # Start and end hour angles
         h = hour_angle(lon, utc, eqnOfTime)
-        a = (h - dh + np.pi) % (2*np.pi) - np.pi
+        a = (h - dh + np.pi) % (2 * np.pi) - np.pi
         b = a + dh
         # Default elevation is zero
         z = np.zeros_like(h)
         # Conditions
-        a1 = (a < -h0)
+        a1 = a < -h0
         a2 = (a >= -h0) & (a < h0)
-        #b1 = (b < -h0)
+        # b1 = (b < -h0)
         b2 = (b >= -h0) & (b < h0)
-        b3 = (b >= h0)
+        b3 = b >= h0
         # Dawn
         np.copyto(z, avg_elevation(-h0, b), where=a1 & b2)
         # Comes up very briefly between a & b
@@ -796,15 +804,16 @@ def elevation(lat, lon, utc, method='ASHRAE', interval=None, h=None):
         Daily
         """
         # Sunset hour angle
-        h = np.arccos(np.clip(-sinDec/cosDec*sinLat/cosLat, -1, 1))
+        h = np.arccos(np.clip(-sinDec / cosDec * sinLat / cosLat, -1, 1))
         # Average daily elevation
         z = avg_elevation(-h, h)
         # Scale by 24-hour interval
-        z /= 2*np.pi
+        z /= 2 * np.pi
 
     else:
-        raise ValueError("Interval must be one of 'instant', 'midpoint', "
-                         "'hourly', or 'daily'")
+        raise ValueError(
+            "Interval must be one of 'instant', 'midpoint', " "'hourly', or 'daily'"
+        )
 
     return z, E0
 
@@ -814,7 +823,7 @@ def air_mass(z):
     Calculate air mass based on Kasten & Young 1989
     """
     beta = np.degrees(np.arcsin(z))
-    return 1/(z + 0.50572*(6.07995+beta)**-1.6364)
+    return 1 / (z + 0.50572 * (6.07995 + beta) ** -1.6364)
 
 
 def erbs(Kt, **kwargs):
@@ -823,8 +832,8 @@ def erbs(Kt, **kwargs):
     via Erbs relation
     """
     Kt = np.asarray(Kt)
-    Kd = 0.9511 - 0.1604*Kt + 4.388*Kt**2 - 16.638*Kt**3 + 12.336*Kt**4
-    np.copyto(Kd, 1.0-0.09*Kt, where=Kt <= 0.22)
+    Kd = 0.9511 - 0.1604 * Kt + 4.388 * Kt ** 2 - 16.638 * Kt ** 3 + 12.336 * Kt ** 4
+    np.copyto(Kd, 1.0 - 0.09 * Kt, where=Kt <= 0.22)
     np.copyto(Kd, 0.165, where=Kt > 0.80)
     return Kd
 
@@ -835,8 +844,8 @@ def orgill_hollands(Kt, **kwargs):
     via Orgill Hollands relation
     """
     Kt = np.asarray(Kt)
-    Kd = 1.557 - 1.84*Kt
-    np.copyto(Kd, 1.0-0.249*Kt, where=Kt <= 0.35)
+    Kd = 1.557 - 1.84 * Kt
+    np.copyto(Kd, 1.0 - 0.249 * Kt, where=Kt <= 0.35)
     np.copyto(Kd, 0.177, where=Kt > 0.75)
     return Kd
 
@@ -849,10 +858,11 @@ def ruiz_arias(Kt, z, **kwargs):
     m = air_mass(z)
     a = (0.944, 1.538, 2.808, -5.759, 2.276, -0.125, 0.013)
     return np.clip(
-        a[0] - a[1]*np.exp(-np.exp(
-            a[2]+a[3]*Kt+a[4]*Kt**2+a[5]*m+a[6]*m**2
-        )),
-        0, 1
+        a[0]
+        - a[1]
+        * np.exp(-np.exp(a[2] + a[3] * Kt + a[4] * Kt ** 2 + a[5] * m + a[6] * m ** 2)),
+        0,
+        1,
     )
 
 
@@ -868,17 +878,29 @@ def engerer(Kt, Ktc, z, h, **kwargs):
     """
 
     # Apparent solar time in hours
-    AST = 12/np.pi*h
+    AST = 12 / np.pi * h
     # Zenith angle in degrees
     theta_z = np.degrees(np.arccos(z))
     dKtc = Ktc - Kt
-    Kde = np.maximum(0, 1.0-Ktc/Kt)
+    Kde = np.maximum(0, 1.0 - Ktc / Kt)
     C = 4.2336e-2
     beta = (-3.7912, 7.5479, -1.0036e-2, 3.1480e-3, -5.3146, 1.7073)
     return np.clip(
-        C + (1.0-C)/(1.0 + np.exp(beta[0] + beta[1]*Kt + beta[2]*AST +
-                     beta[3]*theta_z + beta[4]*dKtc)) + beta[5]*Kde,
-        0, 1
+        C
+        + (1.0 - C)
+        / (
+            1.0
+            + np.exp(
+                beta[0]
+                + beta[1] * Kt
+                + beta[2] * AST
+                + beta[3] * theta_z
+                + beta[4] * dKtc
+            )
+        )
+        + beta[5] * Kde,
+        0,
+        1,
     )
 
 
@@ -886,14 +908,14 @@ def to_utc(lst, tz=0):
     """
     Convert datetime64 in local standard time to UTC
     """
-    return lst - np.timedelta64(int(np.rint(tz*60)), 'm')
+    return lst - np.timedelta64(int(np.rint(tz * 60)), "m")
 
 
 def to_lst(utc, tz=0):
     """
     Convert datetime64 in UTC to local standard time
     """
-    return utc + np.timedelta64(int(np.rint(tz*60)), 'm')
+    return utc + np.timedelta64(int(np.rint(tz * 60)), "m")
 
 
 def to_altitude(z):
@@ -956,21 +978,21 @@ def fit_taus(zi, Kti, iter_max=42, eps_max=1e-6, plot=False, quiet=False):
     # Newton iterations
     def calc(tb, td):
         # Current air mass exponents
-        ab = B1 + B2*tb + B3*td + B4*tb*td
-        ad = D1 + D2*tb + D3*td + D4*tb*td
+        ab = B1 + B2 * tb + B3 * td + B4 * tb * td
+        ad = D1 + D2 * tb + D3 * td + D4 * tb * td
 
-        mab = mi**ab
-        mad = mi**ad
+        mab = mi ** ab
+        mad = mi ** ad
 
-        Kb = np.exp(-tb*mab)
-        Kd = np.exp(-td*mad)/zi
+        Kb = np.exp(-tb * mab)
+        Kd = np.exp(-td * mad) / zi
         Kt = Kb + Kd
 
         # Form Jacobian J
-        dKb_dtb = -Kb*mab*(1+tb*logm*(B2+B4*td))
-        dKd_dtb = -Kd*mad*td*logm*(D2+D4*td)
-        dKb_dtd = -Kb*mab*tb*logm*(B3+B4*tb)
-        dKd_dtd = -Kd*mad*(1+td*logm*(D3+D4*tb))
+        dKb_dtb = -Kb * mab * (1 + tb * logm * (B2 + B4 * td))
+        dKd_dtb = -Kd * mad * td * logm * (D2 + D4 * td)
+        dKb_dtd = -Kb * mab * tb * logm * (B3 + B4 * tb)
+        dKd_dtd = -Kd * mad * (1 + td * logm * (D3 + D4 * tb))
 
         dKt_dtb = dKb_dtb + dKd_dtb
         dKt_dtd = dKb_dtd + dKd_dtd
@@ -990,22 +1012,22 @@ def fit_taus(zi, Kti, iter_max=42, eps_max=1e-6, plot=False, quiet=False):
 
         # Residuals
         dKt = Kti - Kt
-        R = np.sum(dKt**2)
+        R = np.sum(dKt ** 2)
 
         # Form A, [J]^T[J]
-        Abb = (1+damping)*np.sum(dKt_dtb**2)
-        Abd = np.sum(dKt_dtb*dKt_dtd)
-        Add = (1+damping)*np.sum(dKt_dtd**2)
+        Abb = (1 + damping) * np.sum(dKt_dtb ** 2)
+        Abd = np.sum(dKt_dtb * dKt_dtd)
+        Add = (1 + damping) * np.sum(dKt_dtd ** 2)
 
         # Form forcing vector [J]^[dKt]
-        Bb = np.sum(dKt_dtb*dKt)
-        Bd = np.sum(dKt_dtd*dKt)
+        Bb = np.sum(dKt_dtb * dKt)
+        Bd = np.sum(dKt_dtd * dKt)
 
         # Solve A*t = B by Kramer's rule, Giddy-up
         try:
-            detA = Abb*Add - Abd**2
-            dtb = (Bb*Add - Bd*Abd)/detA
-            dtd = (Abb*Bd - Abd*Bb)/detA
+            detA = Abb * Add - Abd ** 2
+            dtb = (Bb * Add - Bd * Abd) / detA
+            dtd = (Abb * Bd - Abd * Bb) / detA
         except OverflowError:
             if not quiet:
                 print("Warning: Determinant overflow while fitting taus")
@@ -1019,9 +1041,9 @@ def fit_taus(zi, Kti, iter_max=42, eps_max=1e-6, plot=False, quiet=False):
 
         # Test
         Ktt, dKtt_dtb, dKtt_dtd = calc(tb + dtb, td + dtd)
-        Rt = np.sum((Kti-Ktt)**2)
+        Rt = np.sum((Kti - Ktt) ** 2)
 
-        if (Rt >= R):
+        if Rt >= R:
             # Worse (need more steep descent)
             damping *= 10
 
@@ -1044,24 +1066,29 @@ def fit_taus(zi, Kti, iter_max=42, eps_max=1e-6, plot=False, quiet=False):
     else:
         # Exceeded iterMax iterations
         if not quiet:
-            print("Warning: Exceeded", iter_max,
-                  "iterations while fitting taus:", tb, td, dtb, dtd)
+            print(
+                "Warning: Exceeded",
+                iter_max,
+                "iterations while fitting taus:",
+                tb,
+                td,
+                dtb,
+                dtd,
+            )
 
         return np.nan, np.nan
 
     if plot:
-        plt.rc('text', usetex=True)
-        plt.rc('text.latex', unicode=True)
-        plt.rc('text.latex', preamble=r'\usepackage{cmbright}')
+        plt.rc("text", usetex=True)
+        plt.rc("text.latex", unicode=True)
+        plt.rc("text.latex", preamble=r"\usepackage{cmbright}")
         f, ax = plt.subplots(figsize=(5, 5), dpi=200)
-        ax.plot(mi, Kti, '.', color='orange', markersize=2)
-        ax.plot(mi, Kt, '.', color='black', markersize=4)
-        ax.set_xlabel("Air Mass $m$", fontsize='smaller')
-        ax.set_ylabel("Clearness Index $K_t$", fontsize='smaller')
+        ax.plot(mi, Kti, ".", color="orange", markersize=2)
+        ax.plot(mi, Kt, ".", color="black", markersize=4)
+        ax.set_xlabel("Air Mass $m$", fontsize="smaller")
+        ax.set_ylabel("Clearness Index $K_t$", fontsize="smaller")
         txt = "\n".join(
-            "%d points" % len(zi),
-            "$\\tau_b$ = %.3f" % tb,
-            "$\\tau_d$ = %.3f" % td
+            "%d points" % len(zi), "$\\tau_b$ = %.3f" % tb, "$\\tau_d$ = %.3f" % td
         )
         ax.text(0.9, 0.9, txt, ha="right", va="top", transform=ax.transAxes)
         plt.tight_layout()
@@ -1076,13 +1103,13 @@ def fit_monthly_taus(z, Kt, lat=None, lon=None, noon_flux=False, **kwargs):
     months = list(range(1, 13))
 
     clear_sky = {
-        'taub': [],
-        'taud': [],
+        "taub": [],
+        "taud": [],
     }
 
     if noon_flux:
-        clear_sky['Ebnoon'] = []
-        clear_sky['Ednoon'] = []
+        clear_sky["Ebnoon"] = []
+        clear_sky["Ednoon"] = []
 
     for month in months:
         # Restrict to month
@@ -1091,26 +1118,26 @@ def fit_monthly_taus(z, Kt, lat=None, lon=None, noon_flux=False, **kwargs):
         # Fit via non-linear least squares
         taub, taud = fit_taus(z[i], Kt[i], **kwargs)
 
-        clear_sky['taub'].append(taub)
-        clear_sky['taud'].append(taud)
+        clear_sky["taub"].append(taub)
+        clear_sky["taud"].append(taud)
 
         if noon_flux:
 
             if np.isnan(taub) or np.isnan(taud):
-                clear_sky['Ebnoon'].append(np.nan)
-                clear_sky['Ednoon'].append(np.nan)
+                clear_sky["Ebnoon"].append(np.nan)
+                clear_sky["Ednoon"].append(np.nan)
                 continue
 
             # Calculate noon elevation and solar ETR on the 21st day
             utc = join_date(2001, m=month, d=21, hh=12)
             z_noon, E0_noon = elevation(
-                lat, lon, utc, method='ASHRAE', interval='instant', h=0
+                lat, lon, utc, method="ASHRAE", interval="instant", h=0
             )
 
             # Calculate corresponding beam and diffuse irradiance
             Eb, Ed = clear_sky_irradiance(z_noon, taub, taud, E0_noon)
-            clear_sky['Ebnoon'].append(Eb)
-            clear_sky['Ednoon'].append(Ed)
+            clear_sky["Ebnoon"].append(Eb)
+            clear_sky["Ednoon"].append(Ed)
 
     return clear_sky
 
@@ -1126,30 +1153,30 @@ def perez(Eb, Ed, E0, E0h, Td):
     d = Ed > 0
 
     # Calculate elevation z=cosZ
-    z = E0h[d]/E0[d]
+    z = E0h[d] / E0[d]
 
     # Calculate zenith angle (radians)
     Z = np.arccos(z)
-    Z3 = Z**3
+    Z3 = Z ** 3
 
     # Calculate air mass
     m = air_mass(z)
 
     # Sky clearness (eqn 1)
     kappa = 1.04
-    epsilon = ((Ed[d]+Eb[d])/Ed[d] + kappa*Z3)/(1 + kappa*Z3)
+    epsilon = ((Ed[d] + Eb[d]) / Ed[d] + kappa * Z3) / (1 + kappa * Z3)
 
     # Sky brightness (eqn 2)
-    Delta = Ed[d]*m/E0[d]
+    Delta = Ed[d] * m / E0[d]
 
     # Precipitable water (cm, eqn 3)
-    W = np.exp(0.07*Td[d] - 0.075)
+    W = np.exp(0.07 * Td[d] - 0.075)
 
     # Sky clearness categories (from overcast to clear)
     bin_edges = [1, 1.065, 1.230, 1.500, 1.950, 2.800, 4.500, 6.200]
 
     # Find clearnness bin
-    i = np.searchsorted(bin_edges, epsilon, side='right') - 1
+    i = np.searchsorted(bin_edges, epsilon, side="right") - 1
 
     # Global luminous efficacy (table 4)
     ai = np.array([96.63, 107.54, 98.73, 92.72, 86.73, 88.34, 78.63, 99.65])
@@ -1159,7 +1186,9 @@ def perez(Eb, Ed, E0, E0h, Td):
 
     # Global illuminance (lux, eqn. 6)
     It = Ed.copy()
-    It[d] = (Eb[d]*z+Ed[d])*(ai[i] + bi[i]*W + ci[i]*z + di[i]*np.log(Delta))
+    It[d] = (Eb[d] * z + Ed[d]) * (
+        ai[i] + bi[i] * W + ci[i] * z + di[i] * np.log(Delta)
+    )
 
     # Direct luminous efficiacy (table 4)
     ai = np.array([57.20, 98.99, 109.83, 110.34, 106.36, 107.19, 105.75, 101.18])
@@ -1169,7 +1198,7 @@ def perez(Eb, Ed, E0, E0h, Td):
 
     # Direct illuminance (lux, eqn. 8)
     Ib = Ed.copy()
-    Ib[d] = Eb[d]*(ai[i] + bi[i]*W + ci[i]*np.exp(5.73*Z-5) + di[i]*Delta)
+    Ib[d] = Eb[d] * (ai[i] + bi[i] * W + ci[i] * np.exp(5.73 * Z - 5) + di[i] * Delta)
     Ib = np.maximum(0, Ib)
 
     # Diffuse luminous efficiacy (table 4)
@@ -1180,7 +1209,7 @@ def perez(Eb, Ed, E0, E0h, Td):
 
     # Diffuse illuminance (lux, eqn. 7)
     Id = Ed.copy()
-    Id[d] = Ed[d]*(ai[i] + bi[i]*W + ci[i]*z + di[i]*np.log(Delta))
+    Id[d] = Ed[d] * (ai[i] + bi[i] * W + ci[i] * z + di[i] * np.log(Delta))
 
     # Zenith luminance prediction (table 4)
     ai = np.array([40.86, 26.58, 19.34, 13.25, 14.47, 19.76, 28.39, 42.91])
@@ -1190,7 +1219,7 @@ def perez(Eb, Ed, E0, E0h, Td):
 
     # Zenith luminance (Cd/m2, eqn. 10)
     Lz = Ed.copy()
-    Lz[d] = Ed[d]*(ai[i] + ci[i]*z + cip[i]*np.exp(-3*Z) + di[i]*Delta)
+    Lz[d] = Ed[d] * (ai[i] + ci[i] * z + cip[i] * np.exp(-3 * Z) + di[i] * Delta)
 
     return It, Ib, Id, Lz
 
@@ -1198,20 +1227,19 @@ def perez(Eb, Ed, E0, E0h, Td):
 def test_coeffs(year=2018):
 
     t1 = np.datetime64("%04d-01-01" % year)
-    t2 = np.datetime64("%04d-01-01" % (year+1, ))
+    t2 = np.datetime64("%04d-01-01" % (year + 1,))
 
     utc = np.arange(t1, t2)
 
     f, ax = plt.subplots(4)
 
-    for method in ['ashrae', 'energyplus', 'cfsr', 'merra2', 'noaa']:
+    for method in ["ashrae", "energyplus", "cfsr", "merra2", "noaa"]:
         coeffs = orbit(utc, method=method)
-        for i, ylabel in enumerate(['sinDec', 'cosDec',
-                                    'eqnOfTime', 'solFactor']):
+        for i, ylabel in enumerate(["sinDec", "cosDec", "eqnOfTime", "solFactor"]):
             ax[i].plot(utc, coeffs[i], label=method)
             ax[i].set_ylabel(ylabel)
 
-    ax[i].legend(loc=0, fontsize='smaller')
+    ax[i].legend(loc=0, fontsize="smaller")
     plt.tight_layout()
     plt.show()
 
@@ -1224,26 +1252,27 @@ def test_location(lat=33.64, lon=-84.43, dates=None):
     for utc in dates:
 
         # 24 hours centered around UTC
-        t = nearest_hour(utc) + np.arange(-12*60, 13*60, dtype="<m8[m]")
+        t = nearest_hour(utc) + np.arange(-12 * 60, 13 * 60, dtype="<m8[m]")
         print(nearest_hour(utc))
 
         f, ax = plt.subplots(3)
 
-        for method in ['ashrae', 'energyplus', 'cfsr', 'merra', 'noaa']:
+        for method in ["ashrae", "energyplus", "cfsr", "merra", "noaa"]:
             x, y, z = position(lat, lon, t, method=method)
-            ax[0].plot_date(t.astype(datetime.datetime), to_altitude(z),
-                            label=method, fmt='-')
-            ax[1].plot_date(t.astype(datetime.datetime), to_azimuth(x, y),
-                            label=method, fmt='-')
+            ax[0].plot_date(
+                t.astype(datetime.datetime), to_altitude(z), label=method, fmt="-"
+            )
+            ax[1].plot_date(
+                t.astype(datetime.datetime), to_azimuth(x, y), label=method, fmt="-"
+            )
             z, E0 = elevation(lat, lon, t, method=method)
-            ax[2].plot_date(t.astype(datetime.datetime), E0*z, fmt='-',
-                            label=method)
+            ax[2].plot_date(t.astype(datetime.datetime), E0 * z, fmt="-", label=method)
             x0, y0, z0 = position(lat, lon, utc, method=method)
             print(to_altitude(z0), to_azimuth(x0, y0))
     ax[0].set_ylabel("Alt")
     ax[1].set_ylabel("Azi")
     ax[2].set_ylabel("TOA Horz")
-    ax[2].legend(loc='best', fontsize='smaller')
+    ax[2].legend(loc="best", fontsize="smaller")
     f.autofmt_xdate()
     plt.tight_layout()
     plt.show()
@@ -1257,8 +1286,8 @@ def test_integration(lat=33.64, lon=-84.43, utc=None):
     print("***")
     print(lat, lon, utc, to_lst(utc, tz=-5))
 
-    for interval in ['instant', 'hourly', 'daily']:
-        print(elevation(lat, lon, utc, method='ASHRAE', interval=None))
+    for interval in ["instant", "hourly", "daily"]:
+        print(elevation(lat, lon, utc, method="ASHRAE", interval=None))
 
 
 def test_solar_irradiance():
@@ -1269,14 +1298,15 @@ def test_solar_irradiance():
 
     f, ax = plt.subplots()
 
-    for method in ['ashrae', 'cfsr', 'merra2']:
+    for method in ["ashrae", "cfsr", "merra2"]:
         tsi = total_solar_irradiance(utc, method=method)
-        ax.plot_date(utc.astype(datetime.datetime), tsi, fmt='-',
-                     label=method, clip_on=False)
+        ax.plot_date(
+            utc.astype(datetime.datetime), tsi, fmt="-", label=method, clip_on=False
+        )
 
     ax.set_ylim(1360, 1368)
     ax.get_yaxis().get_major_formatter().set_useOffset(False)
-    ax.legend(loc='best', fontsize='smaller')
+    ax.legend(loc="best", fontsize="smaller")
     ax.set_ylabel("TSI")
     plt.tight_layout()
     plt.show()
@@ -1290,5 +1320,5 @@ def test():
     test_integration(lat=43.5448, lon=-80.2482)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test()

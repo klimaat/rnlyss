@@ -13,30 +13,39 @@ def main():
     """
 
     parser = argparse.ArgumentParser(
-        description=main.__doc__,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        description=main.__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
-    parser.add_argument('dset', help='Specify dataset')
+    parser.add_argument("dset", help="Specify dataset")
 
     parser.add_argument(
-        '-v', '--dvars', metavar='str', nargs='+',
-        help='Specify dataset variable; default is to include all available'
-    )
-
-    parser.add_argument(
-        '-y', '--years', type=int, metavar='int', nargs='+',
-        help='Specify year(s); default is to include all available'
+        "-v",
+        "--dvars",
+        metavar="str",
+        nargs="+",
+        help="Specify dataset variable; default is to include all available",
     )
 
     parser.add_argument(
-        '-m', '--months', type=int, metavar='int', nargs='+',
-        help='Specify month(s); default is to include all available'
+        "-y",
+        "--years",
+        type=int,
+        metavar="int",
+        nargs="+",
+        help="Specify year(s); default is to include all available",
     )
 
     parser.add_argument(
-        '-i', '--ignore', action='store_true',
-        help='Ignore date and file size check'
+        "-m",
+        "--months",
+        type=int,
+        metavar="int",
+        nargs="+",
+        help="Specify month(s); default is to include all available",
+    )
+
+    parser.add_argument(
+        "-i", "--ignore", action="store_true", help="Ignore date and file size check"
     )
 
     args = parser.parse_args()
@@ -48,5 +57,5 @@ def main():
     dset.download(**vars(args))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
