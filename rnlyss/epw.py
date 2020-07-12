@@ -285,6 +285,20 @@ def write_epw(path, dsets, years, lat=0, lon=0, hgt=0, tz=0, **kwargs):
         # Convert to mm
         df["Pr"] = 3600 * np.maximum(pr, 0)
 
+    # Get aerosol optical depth
+    aod = pd.concat(
+        [dset("aod550", lat, lon, hgt=hgt, years=data_years) for dset in dsets]
+    )
+    if aod is not None:
+        df["AOD"] = aod
+
+    # Get albedo
+    albedo = pd.concat(
+        [dset("albedo", lat, lon, hgt=hgt, years=data_years) for dset in dsets]
+    )
+    if aod is not None:
+        df["Albedo"] = albedo
+
     # Shift to local time
     df = df.shift(int(np.rint(tz * 60)), "min")
 
