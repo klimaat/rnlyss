@@ -570,12 +570,12 @@ def write_epw(path, dsets, years, lat=0, lon=0, hgt=0, tz=0, **kwargs):
 
 def main():
 
-    # Create an Atlanta EPW from the CFSR and CFSV2 datasets for months chosen
+    # Create an Atlanta EPW from MERRA2 for months chosen
     # from selected years
-    years = [2011, 2008, 2005, 2005, 2012, 1990, 2003, 1985, 2017, 1998, 1998, 1980]
-    meta = {"city": "Atlanta", "state": "GA", "country": "USA"}
+    years = [2011, 2008, 2005, 2005, 2012, 1990, 2003, 1985, 2017, 1998, 1998, 1981]
+    meta = {"city": "Atlanta", "state": "GA", "country": "USA", "tz": -5}
     loc = {"lat": 33.640, "lon": -84.430, "hgt": 313}
-    write_epw("Atlanta.epw", dsets=["CFSR", "CFSV2"], years=years, **meta, **loc)
+    write_epw("Atlanta.epw", dsets=["MERRA2"], years=years, **meta, **loc)
 
 
 if __name__ == "__main__":
