@@ -227,9 +227,14 @@ def write_epw(path, dsets, years, lat=0, lon=0, hgt=0, tz=0, **kwargs):
     dsets = [load_dataset(dset) for dset in dset_names]
 
     # Get unique years to retrieve
-
-    # Need to prepend first year's December and last year's January
-    data_years = [years[0] - 1] + list(years) + [years[-1] + 1]
+    if tz > 0:
+        # Need to append each year's next year
+        data_years = [year + i for year in years for i in [0, 1]]
+    elif tz < 0:
+        # Need to prepend each year's previous year
+        data_years = [year + i for year in years for i in [-1, 0]]
+    else:
+        data_years = list(years)
 
     # Get unique years req'd
     data_years = sorted(list(set(data_years)))
