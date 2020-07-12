@@ -172,13 +172,13 @@ class HyperSlab(object):
         )
 
         # Create a int16 dataset initialized to missing to store
-        # whether the maximum value of a given time slice
+        # the minimum value of a given time slice
         self.hdf.create_dataset(
             "min", shape=(nt,), dtype=np.int16, fillvalue=missing,
         )
 
         # Create a int16 dataset initialized to mussubg to store
-        # whether the maximum value of a given time slice
+        # the maximum value of a given time slice
         self.hdf.create_dataset(
             "max", shape=(nt,), dtype=np.int16, fillvalue=missing,
         )

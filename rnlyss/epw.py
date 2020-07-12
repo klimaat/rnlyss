@@ -330,8 +330,6 @@ def write_epw(path, dsets, years, lat=0, lon=0, hgt=0, tz=0, **kwargs):
     # Map wind back into 0-360
     df["WD"] %= 360
 
-    print(df)
-
     # Blend months
     df = blend_months(df)
 
