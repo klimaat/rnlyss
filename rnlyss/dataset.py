@@ -648,17 +648,20 @@ class Dataset(object):
         Kn = Kt * (1 - Kd)
 
         # Diffuse
-        Ed = pd.Series(index=Et.index, data=0, name="Ed")
+        Ed = pd.Series(index=Et.index, data=np.nan, name="Ed")
         Ed[i] = Kd * Et[i]
 
         # Beam normal
-        Eb = pd.Series(index=Et.index, data=0, name="Eb")
+        Eb = pd.Series(index=Et.index, data=np.nan, name="Eb")
         Eb[i] = Kn * E0[i]
 
         # Correct surface and TOA horizontal for export
-        E0h[~i] = 0
-        Et[~i] = 0
-        Etc[~i] = 0
+        # NB. leave NaNs as NaNs
+        E0h[~i & np.isfinite(E0h)] = 0
+        Et[~i & np.isfinite(Et)] = 0
+        Eb[~i & np.isfinite(Et)] = 0
+        Ed[~i & np.isfinite(Et)] = 0
+        Etc[~i & np.isfinite(Etc)] = 0
 
         if plot:
             plt.rc("text", usetex=True)
