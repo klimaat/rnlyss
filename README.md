@@ -146,6 +146,7 @@ print(solar[12:24])
 Once an entire year (or bunch of years) has been stacked, EPW files may be written:
 
 ```Python
+from rnlyss.dataset import load_dataset
 from rnlyss.epw import write_epw
 
 # Create an Atlanta EPW from the CFSR and CFSV2 datasets for months chosen
@@ -153,11 +154,13 @@ from rnlyss.epw import write_epw
 
 years = [2018]*12
 
-meta = {'city': 'Atlanta', 'state': 'GA', 'country': 'USA'}
+meta = {'city': 'Atlanta', 'state': 'GA', 'country': 'USA', 'tz': -5.0}
 
 loc = {'lat': 33.640, 'lon': -84.430, 'hgt': 313}
 
-write_epw('Atlanta.epw', dsets=['MERRA2'], years=years, **meta, **loc)
+dset = load_dataset("MERRA2")
+
+write_epw('Atlanta.epw', dsets=[dset], years=years, **meta, **loc)
 ```
 
 ## Disclaimer
