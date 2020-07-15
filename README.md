@@ -149,7 +149,7 @@ Once an entire year (or bunch of years) has been stacked, EPW files may be writt
 from rnlyss.dataset import load_dataset
 from rnlyss.epw import write_epw
 
-# Create an Atlanta EPW from the CFSR and CFSV2 datasets for months chosen
+# Create an Atlanta EPW from the MERRA2 dataset for months chosen
 # from selected years
 
 years = [2018]*12
