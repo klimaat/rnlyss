@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from rnlyss.dataset import load_dataset
 from rnlyss.psychro import calc_relative_humidity
 
 _METHODS = {
@@ -99,20 +98,36 @@ def cdf_distance(u, v, p=1, norm=True):
     return np.power(np.sum(np.multiply(np.power(np.abs(u_cdf - v_cdf), p), duv)), 1 / p)
 
 
-def tmy(
-    dsets=["MERRA2"],
+def identify_tmy(
+    dsets,
     years=None,
     lat=0,
     lon=0,
-    hgt=0,
+    hgt=None,
     weights=None,
     method=None,
     full_output=False,
 ):
     """
-    Given dsets, a list of potential datasets to use, and years to choose from,
-    generate a list of 12 years, representing a typical Jan, Feb, ..., Dec.
+    Generate a list of 12 years, representing a typical Jan, Feb, ..., Dec,
+    given dsets, a list of potential datasets to use, and years to choose from,
+    location (lat, lon, hgt).
+
+    Also provide either the method (default is "ISO_15927") or the variables and
+    weightings to use in calculating the CFD distances
     """
+
+    # Allow passing a single instance
+    if not isinstance(dsets, (list, tuple)):
+        dsets = [dsets]
+
+    # Figure out clean years
+    years = sorted(sum([list(dset.iter_year(years=years)) for dset in dsets], []))
+    years = list(set(years))
+
+    # Need at least *some* years
+    if len(years) == 0:
+        raise ValueError("None of the requested years is available in the dataset")
 
     # Default weights
     if weights is None:
@@ -124,10 +139,6 @@ def tmy(
     sum_weights = sum(weights.values())
     weights = {k: v / sum_weights for k, v in weights.items()}
 
-    # Instance the requested datasets (e.g. CFSR, CFSv2 and/or MERRA-2)
-    dset_names = [dset.upper() for dset in dsets]
-    dsets = [load_dataset(dset) for dset in dset_names]
-
     # Figure out required variables
     quants = list(set([x.split("_")[0] for x in weights]))
 
@@ -135,14 +146,6 @@ def tmy(
     ops = list(set([x.split("_")[1] for x in weights]))
     if any(x not in _OPS for x in ops):
         raise ValueError("Only %r operations allowed" % list(_OPS.keys()))
-
-    # Figure out clean years
-    years = sorted(sum([list(dset.iter_year(years=years)) for dset in dsets], []))
-    years = list(set(years))
-
-    # Need at least *some* years
-    if len(years) == 0:
-        raise ValueError("None of the requested years is available in the dataset")
 
     # Get SP, DB, DP, WS, SD as a minimum
     df = pd.concat([dset.to_hof(lat, lon, hgt=hgt, years=years) for dset in dsets])
@@ -202,10 +205,15 @@ def tmy(
 
 def main():
 
+    from rnlyss.dataset import load_dataset
+
+    # Instance the requested datasets (e.g. CFSR, CFSv2 and/or MERRA-2)
+    dsets = [load_dataset("MERRA2")]
+
     # Atlanta
     loc = {"lat": 33.640, "lon": -84.430, "hgt": 313}
-    years, dist_ym = tmy(
-        dsets=["MERRA2"],
+    years, dist_ym = identify_tmy(
+        dsets=dsets,
         method="ISO_15927",
         full_output=True,
         years=range(2000, 2021),
