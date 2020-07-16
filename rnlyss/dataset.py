@@ -107,15 +107,24 @@ class Dataset(object):
                     os.path.join(os.environ[dset.upper()], dset)
                 )
 
-            elif "XDG_CONFIG_HOME" in os.environ:
-                # Read from config file, i.e. ~/.config/rnlyss.conf
-                self.data_dir = get_config_dir(
-                    os.path.join(os.environ["XDG_CONFIG_HOME"], "rnlyss.conf"), dset
-                )
-
             else:
-                # Default is $HOME/dset
-                self.data_dir = os.path.join(os.path.expanduser("~"), dset)
+
+                # Check for existence of a config file
+                home_dir = os.path.expanduser("~")
+
+                # Look in XDG_CONFIG_HOME (or $HOME/.config by default)
+                xdg_config_home = os.environ.get(
+                    "XDG_CONFIG_HOME", os.path.join(home_dir, ".config")
+                )
+                config_path = os.path.join(xdg_config_home, "rnlyss.conf")
+
+                if os.path.isfile(config_path):
+                    # Read from rnlyss.conf
+                    self.data_dir = get_config_dir(config_path, dset)
+
+                else:
+                    # Default is $HOME/dset
+                    self.data_dir = os.path.join(home_dir, dset)
 
         else:
             # Specified
