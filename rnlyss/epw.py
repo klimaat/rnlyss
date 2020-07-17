@@ -230,10 +230,10 @@ def write_epw(path, dsets, years, lat=0, lon=0, hgt=0, tz=0, **kwargs):
     # Get unique years to retrieve
     if tz > 0:
         # Need to append each year's next year
-        data_years = [year + i for year in years for i in [0, 1]]
+        data_years = [year + i for year in years for i in [-1, 0]]
     elif tz < 0:
         # Need to prepend each year's previous year
-        data_years = [year + i for year in years for i in [-1, 0]]
+        data_years = [year + i for year in years for i in [0, 1]]
     else:
         data_years = list(years)
 
