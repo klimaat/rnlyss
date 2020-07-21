@@ -80,7 +80,7 @@ class MERRA2(Dataset):
         # Shortwave downwelling @ top of atmosphere (W/m²)
         'SWTDN': {'role': 'rsdt', 'scale': 0.1,
                   'collection': 'tavg1_2d_rad_Nx', 'hour0': 1},
-        # Total precipitation (kg/m²/s)
+        # Total precipitation (kg/m²/s) <-> (mm/s)
         'PRECTOT': {'role': 'pr', 'scale': 1/36000,
                     'collection': 'tavg1_2d_flx_Nx', 'hour0': 1},
         # Cloud fraction (0 to 1)
