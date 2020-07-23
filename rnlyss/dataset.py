@@ -816,6 +816,8 @@ class Dataset(object):
         interp_xy=False,
         interp_z=False,
         exact=True,
+        lapse_rate=-6.5 / 1000,
+        dew_lapse_rate=-2 / 1000,
     ):
         """
         Return a dataframe containing drybulb, dewpoint, station pressure,
@@ -830,10 +832,9 @@ class Dataset(object):
         else:
             order = 0
 
-        if interp_z:
-            lapse_rate = -6.5 / 1000
-        else:
+        if not interp_z:
             lapse_rate = None
+            dew_lapse_rate = None
 
         # Bi-linearly interpolate dry-bulb temperature at site (K)
         db = self(
@@ -844,36 +845,56 @@ class Dataset(object):
         db.name = "DB"
 
         if interp_z:
-            # Bi-linearly interpolate station pressure (Pa)
             # Calculate pressure scale height based on avg temperature at site
             Tm = db.mean()
             Hp = 287.042 * Tm / 9.80665
         else:
             Hp = None
+        # Bi-linearly interpolate station pressure (Pa)
         p = self("ps", lat, lon, hgt=hgt, years=years, order=order, scale_height=Hp)
         p.name = "SP"
 
         # Convert dry bulb K to C
         db -= 273.15
 
-        # Bi-linearly interpolate specific humidity (kg water / kg moist air)
-        if interp_z:
-            # Scale height for vapor pressure
-            Hw = 2500.0
-            # Scale height for Y is geometric average of Hw & Hp
-            Hy = (Hw * Hp) / (Hp - Hw)
-        else:
-            Hy = None
-
-        Y = self("huss", lat, lon, hgt=hgt, years=years, order=order, scale_height=Hy)
-
-        # Calculate vapor pressure (Pa) from specific humidity and pressure
-        pw = calc_vapor_pressure(Y, p=p)
-
-        # Calculate dew point temperature (C) from vapor pressure
-        dp = pd.Series(
-            data=calc_dew_point_temperature(pw, exact=exact), index=pw.index, name="DP"
+        # Check if we have dew point directly
+        dp = self(
+            "tdps",
+            lat,
+            lon,
+            hgt=hgt,
+            years=years,
+            order=order,
+            lapse_rate=dew_lapse_rate,
         )
+
+        if dp is None:
+            # Calculate dew point from specific humidity
+
+            # Bi-linearly interpolate specific humidity (kg water / kg moist air)
+            if interp_z:
+                # Scale height for vapor pressure
+                Hw = 2500.0
+                # Scale height for Y is geometric average of Hw & Hp
+                Hy = (Hw * Hp) / (Hp - Hw)
+            else:
+                Hy = None
+
+            Y = self(
+                "huss", lat, lon, hgt=hgt, years=years, order=order, scale_height=Hy
+            )
+
+            # Calculate vapor pressure (Pa) from specific humidity and pressure
+            pw = calc_vapor_pressure(Y, p=p)
+
+            # Calculate dew point temperature (C) from vapor pressure
+            dp = pd.Series(
+                data=calc_dew_point_temperature(pw, exact=exact),
+                index=pw.index,
+                name="DP",
+            )
+        else:
+            dp.name = "DP"
 
         # Bi-linearly interpolate wind
         ws, wd = self.wind(lat, lon, order=order, years=years)
@@ -881,7 +902,7 @@ class Dataset(object):
         # Create time-aligned dataframe
         df = pd.concat([p, db, dp, ws, wd], axis=1)
 
-        # Correct dewpoint > db
+        # Correct dew point > dry bulb
         i = df.DB < df.DP
         df.loc[i, "DP"] = df.loc[i, "DB"]
 
