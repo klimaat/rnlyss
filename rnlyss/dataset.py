@@ -18,7 +18,7 @@ from rnlyss.psychro import calc_vapor_pressure, calc_dew_point_temperature
 
 
 # Register possible dataset sources
-DATASETS = ["CFSV2", "CFSR", "MERRA2"]
+DATASETS = ["CFSV2", "CFSR", "MERRA2", "ERA5"]
 
 
 def import_module(dset, root="rnlyss"):

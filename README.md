@@ -23,6 +23,8 @@ sudo apt install python3-requests python3-numpy python3-scipy python3-pandas pyt
 
 For CFSR/CFSv2, install the package `pygrib` via instructions available at <https://github.com/jswhit/pygrib>.
 
+For ERA5, install the package `cdsapi` via instructions available at <https://pypi.org/project/cdsapi/>.
+
 ### Download and install
 
 Clone the repository:
@@ -52,18 +54,30 @@ python3 setup.py develop --user --uninstall
 
 ### Authorization
 
-Currently there are two reanalyses products implemented, CFSR/CFSv2 from NOAA and MERRA-2 from NASA. Both products require user accounts in order to download data.  Register online for one or both:
+Currently there are three reanalyses products implemented, CFSR/CFSv2 from NOAA, MERRA-2 from NASA, and ERA5 from ECMWF. All products require user accounts in order to download data.  Register online as needed:
 
 * CFSR/CFSv2 via NCAR Research Data Archive: <https://rda.ucar.edu/>
 * MERRA-2 via NASA Earthdata: <https://urs.earthdata.nasa.gov/>
+* ERA5 via ECMWF Copernicus: <https://cds.climate.copernicus.eu/user>
 
-Place the resulting passwords in `$HOME/.netrc` in the format:
+Place the passwords for CFSR/CFSV2 & MERRA-2 in `$HOME/.netrc` in the format:
 
 ```bash
 machine urs.earthdata.nasa.gov login ernie password a1b2c3d4
 machine rda.ucar.edu login bert@sesame.org password e5g6h7i8
 ```
 
+The Copernicus CDS API for ERA5 requires a file called `$HOME/.cdsapirc` with:
+
+```javascript
+{
+    "url"   : "https://apps.ecmwf.int/v1",
+    "key"   : "a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4",
+    "email" : "michael.j.roth@gmail.com"
+}
+```
+
+ERA5
 ### Dataset Paths
 
 `rnlyss` needs to know where to put stuff. Each dataset can have its own location (e.g. if you have multiple hard drives). You have three options:
@@ -74,6 +88,7 @@ machine rda.ucar.edu login bert@sesame.org password e5g6h7i8
 export MERRA2=/bert
 export CFSR=/ernie
 export CFSV2=/kermit
+export ERA5=/piggy
 ```
 
 2. Set paths in `$HOME/.config/rnlyss.conf`:
@@ -83,6 +98,7 @@ export CFSV2=/kermit
 MERRA2=/bert
 CFSR=/ernie
 CFSV2=/kermit
+ERA5=/piggy
 ```
 
 3. Do nothing and all datasets will default to `$HOME`.
