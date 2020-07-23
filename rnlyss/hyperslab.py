@@ -21,7 +21,12 @@ class HyperSlab(object):
         Connect to an existing hdf5 file
         """
         self.close()
-        self.hdf = h5py.File(self.path, mode=mode, **kwargs)
+        try:
+            self.hdf = h5py.File(self.path, mode=mode, **kwargs)
+        except OSError as ex:
+            return None
+        except Exception:
+            raise
         self.setup()
 
     def setup(self):
