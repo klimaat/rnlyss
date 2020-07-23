@@ -40,7 +40,7 @@ class DelayedKeyboardInterrupt(object):
 
     def handler(self, sig, frame):
         self.signal_received = (sig, frame)
-        print("\nSIGINT received. Delaying KeyboardInterrupt.")
+        print("\nSIGINT received. Delaying KeyboardInterrupt.", flush=True)
 
     def __exit__(self, type, value, traceback):
         signal.signal(signal.SIGINT, self.old_handler)
