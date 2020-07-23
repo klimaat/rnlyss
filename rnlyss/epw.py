@@ -484,55 +484,60 @@ def write_epw(path, dsets, years, lat=0, lon=0, hgt=0, tz=0, **kwargs):
         ("Month", None, None),
         ("Day", None, None),
         ("Hour", None, None),
-        ("Minute", None, 60),
+        ("Minute", None, "60"),
         ("Flags", None, "*"),
-        ("DB", 1, None),
-        ("DP", 1, None),
-        ("RH", 0, None),
-        ("SP", 0, None),
-        ("E0h", 0, None),
-        ("E0", 0, None),
-        ("LW", 0, None),
-        ("Et", 0, None),
-        ("Eb", 0, None),
-        ("Ed", 0, None),
-        ("It", 0, 999999),
-        ("Ib", 0, 999999),
-        ("Id", 0, 999999),
-        ("Lz", 0, 9999),
-        ("WD", 0, None),
-        ("WS", 1, None),
-        ("TCC", 0, 99),
-        ("OCC", 0, 99),
-        ("Viz", 0, 9999),
-        ("Ceiling", 0, 99999),
-        ("WObs", 0, 9),
-        ("WCode", 0, 999999999),
-        ("PWat", 1, 999),
-        ("AOD", 3, 999),
-        ("Snow", 0, 999),
-        ("Days", 0, 99),
-        ("Albedo", 3, 999),
-        ("Pr", 1, 0),
-        ("PrHr", 1, 1),
+        ("DB", 1, "99.9"),
+        ("DP", 1, "99.9"),
+        ("RH", 0, "999"),
+        ("SP", 0, "999999"),
+        ("E0h", 0, "9999"),
+        ("E0", 0, "9999"),
+        ("LW", 0, "9999"),
+        ("Et", 0, "9999"),
+        ("Eb", 0, "9999"),
+        ("Ed", 0, "9999"),
+        ("It", 0, "999999"),
+        ("Ib", 0, "999999"),
+        ("Id", 0, "999999"),
+        ("Lz", 0, "9999"),
+        ("WD", 0, "999"),
+        ("WS", 1, "999"),
+        ("TCC", 0, "99"),
+        ("OCC", 0, "99"),
+        ("Viz", 0, "9999"),
+        ("Ceiling", 0, "99999"),
+        ("WObs", 0, "9"),
+        ("WCode", 0, "999999999"),
+        ("PWat", 1, "999"),
+        ("AOD", 3, ".999"),
+        ("Snow", 0, "999"),
+        ("Days", 0, "99"),
+        ("Albedo", 3, "999"),
+        ("Pr", 1, "999"),
+        ("PrHr", 1, "1"),
     ]
 
     # Add columns that don't exist
+    def map_val(col, x, prec, default):
+        if pd.isnull(x):
+            if default is None:
+                raise ValueError("Need a value for {0}".format(col))
+            return default
+        else:
+            if prec is None:
+                return str(x)
+            else:
+                return "{val:.{prec}f}".format(val=x, prec=prec)
 
     for col, prec, default in fmts:
         if col in df.columns:
             # Clean-up
             if prec is not None:
-                df[col] = df[col].map(
-                    lambda x: "{val:.{prec}f}".format(val=x, prec=prec)
-                )
+                df[col] = df[col].map(lambda x: map_val(col, x, prec, default))
         else:
             if default is None:
                 raise ValueError("Need a value for {0}".format(col))
-            if prec is None:
-                df[col] = default
-            else:
-                df[col] = "{val:.{prec}f}".format(val=default, prec=prec)
+            df[col] = default
 
     cols = [fmt[0] for fmt in fmts]
 
