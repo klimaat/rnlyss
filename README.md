@@ -77,7 +77,6 @@ The Copernicus CDS API for ERA5 requires a file called `$HOME/.cdsapirc` with:
 }
 ```
 
-ERA5
 ### Dataset Paths
 
 `rnlyss` needs to know where to put stuff. Each dataset can have its own location (e.g. if you have multiple hard drives). You have three options:

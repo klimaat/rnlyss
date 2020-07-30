@@ -243,17 +243,28 @@ class ERA5(Dataset):
                         # Check that data exists
                         path = self.get_nc3_filename(full_name, year, month)
                         if not os.path.isfile(path):
-                            print(dvar, "missing... skipping")
+                            print(year, month, "missing... skipping")
                             continue
 
                         # Shape of this month; i.e. nlat x nlon x nh values
                         shape = self.grid.shape + (nh,)
 
-                        # Store entire month; big!
-                        X = np.zeros(shape, dtype=np.int16)
-
-                        print(year, month, "... reading", end="", flush=True)
                         with netCDF4.Dataset(path) as nc:
+                            # Check for ERA5T
+                            if 'expver' in nc.variables:
+                                print(year, month, "expver... skipping")
+                                continue
+
+                            # Check that month isn't truncated
+                            if nc.variables[dvar].shape[0] != nh:
+                                print(year, month, "incomplete... skipping")
+                                continue
+
+                            # Store entire month; big!
+                            X = np.zeros(shape, dtype=np.int16)
+
+                            print(year, month, "complete... reading", end="", flush=True)
+
                             h = 0
                             for d in range(nh // 24):
                                 # Read in 24 hours, convert, cast to int16, & transpose
@@ -405,26 +416,6 @@ def main():
     # (return the nearest location)
     x = E("tdps", lat, lon)
     print(x.head())
-
-    # # The same call but applying bi-linear interpolation of the surrounding
-    # # 4 grid locations and restricting data to the year 2018.
-    # y = M("tas", 33.640, -84.430, hgt=313, order=1, years=[2018])
-    # print(y.head())
-
-    # # Calculate the ASHRAE tau coefficients and optionally the fluxes at noon
-    # tau = M.to_clearsky(33.640, -84.430, years=[2018], noon_flux=True)
-    # print(tau)
-
-    # # Produces the average monthly (and annual) daily-average all sky radiation
-    # # for every requested year
-    # rad = M.to_allsky(lat=33.640, lon=-84.430, years=[2018])
-
-    # # Which again can be massaged into the required statistics (mean, std)
-    # print(rad.describe().round(decimals=1))
-
-    # # Extract the solar components
-    # solar = M.solar_split(33.640, -84.430, years=[2018])
-    # print(solar[12:24])
 
 
 if __name__ == "__main__":
