@@ -895,6 +895,7 @@ class Dataset(object):
             )
         else:
             dp.name = "DP"
+            dp -= 273.15
 
         # Bi-linearly interpolate wind
         ws, wd = self.wind(lat, lon, order=order, years=years)
