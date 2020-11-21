@@ -256,24 +256,21 @@ def write_epw(path, dsets, years, lat=0, lon=0, hgt=0, tz=0, **kwargs):
     sw = pd.concat([dset.solar_split(lat, lon, years=data_years) for dset in dsets])
     df = pd.concat([df, sw], axis=1)
 
+    def concat(x):
+        return None if all(v is None for v in x) else pd.concat(x)
+
     # Get longwave
-    lw = pd.concat(
-        [dset("rlds", lat, lon, hgt=hgt, years=data_years) for dset in dsets]
-    )
+    lw = concat([dset("rlds", lat, lon, hgt=hgt, years=data_years) for dset in dsets])
     if lw is not None:
         df["LW"] = lw
 
     # Get preciptable water
-    pwat = pd.concat(
-        [dset("pwat", lat, lon, hgt=hgt, years=data_years) for dset in dsets]
-    )
+    pwat = concat([dset("pwat", lat, lon, hgt=hgt, years=data_years) for dset in dsets])
     if pwat is not None:
         df["PWat"] = pwat
 
     # Get cloud fraction, limit to 0, 1 (thank you again CFSR)
-    clt = pd.concat(
-        [dset("clt", lat, lon, hgt=hgt, years=data_years) for dset in dsets]
-    )
+    clt = concat([dset("clt", lat, lon, hgt=hgt, years=data_years) for dset in dsets])
 
     if clt is not None:
         clt = np.minimum(np.maximum(clt, 0), 1)
@@ -281,13 +278,13 @@ def write_epw(path, dsets, years, lat=0, lon=0, hgt=0, tz=0, **kwargs):
         df["TCC"] = 10 * clt
 
     # Get precipitation rate
-    pr = pd.concat([dset("pr", lat, lon, hgt=hgt, years=data_years) for dset in dsets])
+    pr = concat([dset("pr", lat, lon, hgt=hgt, years=data_years) for dset in dsets])
     if pr is not None:
         # Convert to mm
         df["Pr"] = 3600 * np.maximum(pr, 0)
 
     # Get aerosol optical depth
-    aod = pd.concat(
+    aod = concat(
         [dset("aod550", lat, lon, hgt=hgt, years=data_years) for dset in dsets]
     )
     if aod is not None:
