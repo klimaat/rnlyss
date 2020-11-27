@@ -341,7 +341,11 @@ def write_epw(path, dsets, years, lat=0, lon=0, hgt=0, tz=0, **kwargs):
 
     # Insert this time index into df, sort the time index, interpolate, and
     # select only the required months
-    df = df.join(ts, how="outer").sort_index().interpolate(method="values")
+    df = (
+        df.join(ts, how="outer")
+        .sort_index()
+        .interpolate(method="values", limit_direction="both")
+    )
     df = df[~df.index.duplicated(keep="last")].reindex(ts.index)
 
     # Map wind back into 0-360
