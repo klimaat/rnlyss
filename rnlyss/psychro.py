@@ -150,17 +150,84 @@ def calc_relative_humidity(t, td):
     )
 
 
+def calc_humidity_ratio(td, p=P0_):
+    """
+    Calculate humidity ratio (kg water per kg dry air) given
+    dew point temperature td (°C) and pressure (Pa).
+    """
+    pw = calc_saturation_vapor_pressure(td)
+    return epsilon * pw / (p - pw)
+
+
 def calc_specific_humidity(td, p=P0_):
     """
     Calculate specific humidity (kg water per kg moist air) given
     dew point temperature td (°C) and pressure (Pa).
     """
-
-    pw = calc_saturation_vapor_pressure(td)
-
-    W = epsilon * pw / (p - pw)
-
+    W = calc_humidity_ratio(td, p=p)
     return W / (1 + W)
+
+
+def calc_wetbulb_temperature(t, td, p=P0_, eps=1e-8):
+    """
+    Calculate wet-bulb temperature twb (°C) from dry-bulb temperature t (°C) and
+    specific humidity Y (-) and pressure p (Pa).
+    """
+
+    """
+    Options:
+    * A Start with the 1/3-rule for wet-bulb.
+    * B Start with wet-bulb = dry-bulb
+    B has better overall convergence
+    """
+
+    # Humidity ratio
+    W = calc_humidity_ratio(td, p=p)
+
+    # First guess for wet-bulb (option A)
+    twb = 2 / 3 * t + 1 / 3 * td
+
+    # Cache indices with above zero temps
+    above = t >= 0
+
+    dtwb = np.inf
+    while np.abs(dtwb).max() > eps:
+
+        # Calculate vapor pressure (and derivative) at current wet-bulb
+        pws_wb, dpws_wb = calc_saturation_vapor_pressure(twb, jacobian=True)
+
+        # Calculate saturation humidity ratio (and derivative) at wet-bulb
+        # temperature
+        Ws_wb = epsilon * pws_wb / (p - pws_wb)
+        dWs_wb = epsilon * p / (p - pws_wb) ** 2 * dpws_wb
+
+        # Calculate a humidty ratio (and derivative) at current wet-bulb
+        # using HOF 2013, Chap 1, eqn 36, split into numerator A and
+        # denominator B
+        A = np.where(
+            above,
+            (2501 - 2.326 * twb) * Ws_wb - 1.006 * (t - twb),
+            (2830 - 0.24 * twb) * Ws_wb - 1.006 * (t - twb),
+        )
+
+        dA = np.where(
+            above,
+            -2.326 * Ws_wb + (2501 - 2.326 * twb) * dWs_wb + 1.006,
+            -0.24 * Ws_wb + (2830 - 0.24 * twb) * dWs_wb + 1.006,
+        )
+
+        B = np.where(above, 2501 + 1.86 * t - 4.186 * twb, 2830 + 1.86 * t - 2.1 * twb)
+
+        dB = np.where(above, -4.186, -2.1)
+
+        W_ = A / B
+        dW = (dA * B - A * dB) / B ** 2
+
+        # Newton iteration
+        dtwb = (W - W_) / dW
+        twb += dtwb
+
+    return twb
 
 
 def test():
