@@ -168,7 +168,7 @@ def calc_specific_humidity(td, p=P0_):
     return W / (1 + W)
 
 
-def calc_wetbulb_temperature(t, td, p=P0_, eps=1e-8):
+def calc_wetbulb_temperature(t, td, p=P0_, eps=1e-8, n=10):
     """
     Calculate wet-bulb temperature twb (°C) from dry-bulb temperature t (°C) and
     specific humidity Y (-) and pressure p (Pa).
@@ -191,6 +191,7 @@ def calc_wetbulb_temperature(t, td, p=P0_, eps=1e-8):
     above = t >= 0
 
     dtwb = np.inf
+    i = 0
     while np.abs(dtwb).max() > eps:
 
         # Calculate vapor pressure (and derivative) at current wet-bulb
@@ -226,6 +227,11 @@ def calc_wetbulb_temperature(t, td, p=P0_, eps=1e-8):
         # Newton iteration
         dtwb = (W - W_) / dW
         twb += dtwb
+
+        # Limit iterations
+        i += 1
+        if i > n:
+            break
 
     return twb
 
