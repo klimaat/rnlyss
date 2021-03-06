@@ -2,6 +2,7 @@
 
 import os
 import time
+from datetime import datetime
 import numpy as np
 import calendar
 
@@ -251,7 +252,7 @@ class ERA5(Dataset):
 
                         with netCDF4.Dataset(path) as nc:
                             # Check for ERA5T
-                            if 'expver' in nc.variables:
+                            if "expver" in nc.variables:
                                 print(year, month, "expver... skipping")
                                 continue
 
@@ -263,7 +264,9 @@ class ERA5(Dataset):
                             # Store entire month; big!
                             X = np.zeros(shape, dtype=np.int16)
 
-                            print(year, month, "complete... reading", end="", flush=True)
+                            print(
+                                year, month, "complete... reading", end="", flush=True
+                            )
 
                             h = 0
                             for d in range(nh // 24):
@@ -303,6 +306,14 @@ class ERA5(Dataset):
         # Establish CDS API client
         CDS = cdsapi.Client()
 
+        def n_months(year, month):
+            """
+            Months between now and (year, month)
+            """
+            now = datetime.utcnow()
+            then = datetime(year, month, 1)
+            return (now.year - then.year) * 12 + (now.month - then.month)
+
         def get_era5_args(dvar, year, month, constant=False):
             """
             Return variable name, selection dict, and target path
@@ -313,9 +324,15 @@ class ERA5(Dataset):
 
             target_path = self.get_nc3_filename(full_name, year, month)
 
+            # Check that we're not within 3 months
+            if n_months(year, month) <= 3:
+                print("%s likely contains ERA5T... skipping" % target_path)
+                return None
+
             os.makedirs(os.path.dirname(target_path), exist_ok=True)
 
             if os.path.isfile(target_path):
+                print("%s exists... skipping" % target_path)
                 return None
 
             if constant:
@@ -358,7 +375,7 @@ class ERA5(Dataset):
                 # Stream to file
                 CDS.retrieve(name, request, target)
 
-            except:
+            except Exception:
                 # Problem; delete file
                 if os.path.isfile(target):
                     print("%s interrupted... deleting" % target)
