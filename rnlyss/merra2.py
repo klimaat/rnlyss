@@ -316,7 +316,7 @@ class MERRA2(Dataset):
                 # Stream to file
                 shutil.copyfileobj(request.raw, open(dst, "wb"))
 
-            except:
+            except Exception:
                 # Problem; delete file
                 if os.path.isfile(dst):
                     print("%s interrupted... deleting" % dst)
@@ -398,35 +398,45 @@ class MERRA2(Dataset):
             if os.path.isfile(dst) and ignore:
                 return True
 
-            # Determine stream;
+            # Determine stream SV;
             if year <= 1991:
-                stream = "100"
+                stream = "10"
             elif 1991 < year <= 2000:
-                stream = "200"
+                stream = "20"
             elif 2000 < year <= 2010:
-                stream = "300"
+                stream = "30"
             else:
-                stream = "400"
+                stream = "40"
 
             collection = self.dvars[dvar].get("collection", "inst1_2d_asm_Nx")
 
             shortname = shortnames[collection]
 
-            fn = "/data/MERRA2/%s.5.12.4/" % shortname
-            fn += "%04d/%02d/" % (year, month)
-            fn += "MERRA2_%s.%s." % (stream, collection)
-            fn += "%04d%02d%02d.nc4" % (year, month, day)
+            def get_fn(ver):
+                """
+                There may be different versions that we need to ping
+                """
+                fn = "/data/MERRA2/%s.5.12.4/" % shortname
+                fn += "%04d/%02d/" % (year, month)
+                fn += "MERRA2_%s%s.%s." % (stream, ver, collection)
+                fn += "%04d%02d%02d.nc4" % (year, month, day)
+                return fn
 
             # Check time of server file from which the subsetter works
             # i.e. subsetter always returns a brand new file
 
-            url = r"https://goldsmr4.gesdisc.eosdis.nasa.gov" + fn
-
-            request = session.head(url)
-
-            if request.status_code != 200:
-                print("%s unavailable... skipping" % dst)
+            # First determine if any versions exist
+            for ver in ["0", "1"]:
+                fn = get_fn(ver)
+                url = r"https://goldsmr4.gesdisc.eosdis.nasa.gov" + fn
+                request = session.head(url)
+                if request.status_code == 200:
+                    break
+            else:
+                print("%s unavailable... skipping" % fn)
                 return False
+
+            print("%s available... checking" % fn)
 
             # Assume that if we have a file of the same date we can skip
             last_modified = mktime_tz(parsedate_tz(request.headers["Last-Modified"]))
