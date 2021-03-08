@@ -1036,7 +1036,7 @@ def fit_taus(zi, Kti, iter_max=42, eps_max=1e-6, plot=False, quiet=False):
             if not quiet:
                 print("Warning: Division by zero while fitting taus")
             return np.nan, np.nan
-        except:
+        except Exception:
             raise
 
         # Test
