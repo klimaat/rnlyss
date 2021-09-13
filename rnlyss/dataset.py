@@ -600,13 +600,13 @@ class Dataset(object):
         if Et is None:
             return None
         # Can have negative (looking at you CFSR)
-        Et = Et.clip_lower(0)
+        Et = Et.clip(lower=0)
 
         # Extract downwelling shortwave at top-of-atmosphere
         E0h = self("rsdt", lat, lon, years=years)
         if E0h is None:
             return None
-        E0h = E0h.clip_lower(0)
+        E0h = E0h.clip(lower=0)
 
         # Extract maximum E0h, representing E0
         E0 = self.max("rsdt", years=years)
@@ -618,7 +618,7 @@ class Dataset(object):
         Etc = self("rsdsc", lat, lon, years=years)
         if Etc is None:
             return None
-        Etc = Etc.clip_lower(0)
+        Etc = Etc.clip(lower=0)
 
         # UTC
         utc = Et.index.values - np.timedelta64(30, "m")
