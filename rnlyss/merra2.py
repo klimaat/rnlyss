@@ -316,7 +316,7 @@ class MERRA2(Dataset):
                 # Stream to file
                 shutil.copyfileobj(request.raw, open(dst, "wb"))
 
-            except Exception:
+            except BaseException:
                 # Problem; delete file
                 if os.path.isfile(dst):
                     print("%s interrupted... deleting" % dst)

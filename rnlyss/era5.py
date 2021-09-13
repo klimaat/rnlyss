@@ -375,7 +375,7 @@ class ERA5(Dataset):
                 # Stream to file
                 CDS.retrieve(name, request, target)
 
-            except Exception:
+            except BaseException:
                 # Problem; delete file
                 if os.path.isfile(target):
                     print("%s interrupted... deleting" % target)

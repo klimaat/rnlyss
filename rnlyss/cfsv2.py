@@ -303,7 +303,7 @@ class CFSV2(Dataset):
                 shutil.copyfileobj(request.raw, open(dst, "wb"))
                 # Set time on disk to server time
                 os.utime(dst, (last_modified, last_modified))
-            except:
+            except BaseException:
                 # Problem; delete file
                 if os.path.isfile(dst):
                     print("%s deleted... skipping" % dst)
@@ -325,7 +325,7 @@ class CFSV2(Dataset):
                 try:
                     headers = {"Range": "bytes={0}-{1}".format(*byte_range)}
                     request = session.get(url, headers=headers, stream=True)
-                except:
+                except BaseException:
                     # Retry
                     print("%s unavailable... retrying" % url)
                     continue
@@ -354,7 +354,7 @@ class CFSV2(Dataset):
             try:
                 # Stream to file
                 shutil.copyfileobj(request.raw, open(dst, "ab"))
-            except:
+            except BaseException:
                 # Delete file at the slighest whiff of trouble
                 if os.path.isfile(dst):
                     os.remove(dst)
