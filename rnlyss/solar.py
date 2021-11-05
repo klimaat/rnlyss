@@ -6,7 +6,6 @@ from __future__ import division
 
 import datetime
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 def join_date(y=1970, m=1, d=1, hh=0, mm=0, ss=0):
@@ -1079,6 +1078,8 @@ def fit_taus(zi, Kti, iter_max=42, eps_max=1e-6, plot=False, quiet=False):
         return np.nan, np.nan
 
     if plot:
+        import matplotlib.pyplot as plt
+
         plt.rc("text", usetex=True)
         plt.rc("text.latex", unicode=True)
         plt.rc("text.latex", preamble=r"\usepackage{cmbright}")
@@ -1226,6 +1227,8 @@ def perez(Eb, Ed, E0, E0h, Td):
 
 def test_coeffs(year=2018):
 
+    import matplotlib.pyplot as plt
+
     t1 = np.datetime64("%04d-01-01" % year)
     t2 = np.datetime64("%04d-01-01" % (year + 1,))
 
@@ -1245,6 +1248,8 @@ def test_coeffs(year=2018):
 
 
 def test_location(lat=33.64, lon=-84.43, dates=None):
+
+    import matplotlib.pyplot as plt
 
     if dates is None:
         dates = [np.datetime64(datetime.datetime.utcnow())]
@@ -1291,6 +1296,8 @@ def test_integration(lat=33.64, lon=-84.43, utc=None):
 
 
 def test_solar_irradiance():
+
+    import matplotlib.pyplot as plt
 
     years, months = np.mgrid[1979:2019, 1:13]
 

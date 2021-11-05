@@ -6,7 +6,6 @@ import os
 import datetime
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import importlib
 import configparser
 
@@ -673,6 +672,7 @@ class Dataset(object):
         Etc[~i & np.isfinite(Etc)] = 0
 
         if plot:
+            import matplotlib.pyplot as plt
             plt.rc("text", usetex=True)
             plt.rc("text.latex", unicode=True)
             plt.rc("text.latex", preamble=r"\usepackage{cmbright}")

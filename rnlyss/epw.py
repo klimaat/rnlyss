@@ -9,7 +9,6 @@ Input/Output routines
 import calendar
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from rnlyss.psychro import calc_relative_humidity
 from rnlyss.solar import perez
