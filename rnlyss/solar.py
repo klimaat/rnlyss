@@ -442,6 +442,65 @@ def orbit_merra2(utc):
 orbit_merra2.orbit = None
 
 
+def orbit_era5(utc):
+    """
+    Orbit as per ERA5 code.
+
+    From snippet of IFS code (ECMWF)
+    """
+
+    # 1 astronomical unit (m)
+    REA = 149597870000
+
+    # Number of seconds in a day
+    RDAY = 86400
+
+    # Seconds from start of year
+    PTIME = day_of_year(utc) * RDAY
+
+    # Fraction of year
+    PTETA = PTIME / (RDAY * 365.25)
+
+    REL = 1.7535 + 6.283076 * PTETA
+    REM = 6.240075 + 6.283020 * PTETA
+
+    # Sun-Earth distance
+    RRS = REA * (1.0001 - 0.0163 * np.sin(REL) + 0.0037 * np.cos(REL))
+    solFactor = (REA / RRS) ** 2
+
+    # Relative movement Sun/Earth
+    RLLS = 4.8951 + 6.283076 * PTETA
+
+    # Declination
+    RLLLS = (
+        4.8952
+        + 6.283320 * PTETA
+        - 0.0075 * np.sin(REL)
+        - 0.0326 * np.cos(REL)
+        - 0.0003 * np.sin(2.0 * REL)
+        + 0.0002 * np.cos(2.0 * REL)
+    )
+
+    # Max declination 23.44°
+    REPSM = 0.409093
+
+    RDS = np.arcsin(np.sin(REPSM) * np.sin(RLLLS))
+    sinDec = np.sin(RDS)
+    cosDec = np.sqrt(1 - sinDec ** 2)
+
+    # Equation of time
+    RET = (
+        591.8 * np.sin(2.0 * RLLS)
+        - 459.4 * np.sin(REM)
+        + 39.5 * np.sin(REM) * np.cos(2.0 * RLLS)
+        - 12.7 * np.sin(4.0 * RLLS)
+        - 4.8 * np.sin(2.0 * REM)
+    )
+    eqnOfTime = RET * 2 * np.pi / RDAY
+
+    return sinDec, cosDec, eqnOfTime, solFactor
+
+
 def orbit(utc, method=None):
 
     if method is None:
@@ -452,15 +511,17 @@ def orbit(utc, method=None):
         method = "Custom"
     else:
         method = method.upper()
-        if method.startswith("A"):
+        if method == "ASHRAE":
             func = orbit_ashrae
-        elif method.startswith("C"):
+        elif method in ["CFSR", "CFSV2"]:
             func = orbit_cfsr
-        elif method.startswith("E"):
-            func = orbit_energyplus
-        elif method.startswith("M"):
+        elif method == "MERRA2":
             func = orbit_merra2
-        elif method.startswith("N"):
+        elif method == "ERA5":
+            func = orbit_era5
+        elif method in ["EPW", "ENERGYPLUS"]:
+            func = orbit_energyplus
+        elif method in ["NOAA"]:
             func = orbit_noaa
         else:
             raise NotImplementedError(method)
@@ -474,6 +535,19 @@ def total_solar_irradiance_ashrae(utc):
     """
 
     return 1367.0 * (np.ones_like(utc).astype(float))
+
+
+def total_solar_irradiance_era5(utc):
+    """
+    Return ERA5 constant solar irradiance value (W/m²)
+
+    Ref: Hersbach, 2020. "The ERA5 global reanalysis". QJRMS v.146(730) p.2022
+
+    Note: This is an average value. The value of TSI actually changes and
+          must be pulled out of the TOA value if necessary.
+    """
+
+    return 4 * 340.4 * (np.ones_like(utc).astype(float))
 
 
 def total_solar_irradiance_cfsr(utc):
@@ -615,15 +689,17 @@ def total_solar_irradiance(utc, method=None):
 
     else:
         method = method.upper()
-        if method.startswith("A"):
+        if method == "ASHRAE":
             func = total_solar_irradiance_ashrae
-        elif method.startswith("C"):
+        elif method in ["CFSR", "CFSV2"]:
             func = total_solar_irradiance_cfsr
-        elif method.startswith("E"):
-            func = total_solar_irradiance_ashrae
-        elif method.startswith("M"):
+        elif method == "MERRA2":
             func = total_solar_irradiance_merra2
-        elif method.startswith("N"):
+        elif method == "ERA5":
+            func = total_solar_irradiance_era5
+        elif method in ["EPW", "ENERGYPLUS"]:
+            func = total_solar_irradiance_ashrae
+        elif method in ["NOAA"]:
             func = total_solar_irradiance_ashrae
         else:
             raise NotImplementedError(method)
@@ -1231,15 +1307,24 @@ def test_coeffs(year=2018):
 
     utc = np.arange(t1, t2)
 
-    f, ax = plt.subplots(4)
+    f, ax = plt.subplots(4, sharex=True, figsize=(12, 9))
+    # ax = ax.flatten()
 
-    for method in ["ashrae", "energyplus", "cfsr", "merra2", "noaa"]:
+    methods = ["ashrae", "energyplus", "cfsr", "merra2", "era5", "noaa"]
+    for method in methods:
         coeffs = orbit(utc, method=method)
         for i, ylabel in enumerate(["sinDec", "cosDec", "eqnOfTime", "solFactor"]):
-            ax[i].plot(utc, coeffs[i], label=method)
+            ax[i].plot(utc, coeffs[i], lw=2, label=method)
             ax[i].set_ylabel(ylabel)
 
-    ax[i].legend(loc=0, fontsize="smaller")
+    ax[0].legend(
+        loc="lower right",
+        ncol=len(methods),
+        bbox_to_anchor=(1, 1),
+        frameon=False,
+        borderaxespad=0,
+        fontsize="smaller",
+    )
     plt.tight_layout()
     plt.show()
 
@@ -1257,9 +1342,10 @@ def test_location(lat=33.64, lon=-84.43, dates=None):
         t = nearest_hour(utc) + np.arange(-12 * 60, 13 * 60, dtype="<m8[m]")
         print(nearest_hour(utc))
 
-        f, ax = plt.subplots(3)
+        f, ax = plt.subplots(3, figsize=(9, 6))
 
-        for method in ["ashrae", "energyplus", "cfsr", "merra", "noaa"]:
+        methods = ["ashrae", "energyplus", "cfsr", "merra2", "era5", "noaa"]
+        for method in methods:
             x, y, z = position(lat, lon, t, method=method)
             ax[0].plot_date(
                 t.astype(datetime.datetime), to_altitude(z), label=method, fmt="-"
@@ -1274,7 +1360,14 @@ def test_location(lat=33.64, lon=-84.43, dates=None):
     ax[0].set_ylabel("Alt")
     ax[1].set_ylabel("Azi")
     ax[2].set_ylabel("TOA Horz")
-    ax[2].legend(loc="best", fontsize="smaller")
+    ax[0].legend(
+        loc="lower right",
+        ncol=len(methods),
+        bbox_to_anchor=(1, 1),
+        frameon=False,
+        borderaxespad=0,
+        fontsize="smaller",
+    )
     f.autofmt_xdate()
     plt.tight_layout()
     plt.show()
@@ -1300,9 +1393,10 @@ def test_solar_irradiance():
 
     utc = join_date(y=years.flatten(), m=months.flatten())
 
-    f, ax = plt.subplots()
+    f, ax = plt.subplots(figsize=(9, 6))
 
-    for method in ["ashrae", "cfsr", "merra2"]:
+    methods = ["ashrae", "cfsr", "merra2", "era5"]
+    for method in methods:
         tsi = total_solar_irradiance(utc, method=method)
         ax.plot_date(
             utc.astype(datetime.datetime), tsi, fmt="-", label=method, clip_on=False
@@ -1310,7 +1404,14 @@ def test_solar_irradiance():
 
     ax.set_ylim(1360, 1368)
     ax.get_yaxis().get_major_formatter().set_useOffset(False)
-    ax.legend(loc="best", fontsize="smaller")
+    ax.legend(
+        loc="lower right",
+        ncol=len(methods),
+        bbox_to_anchor=(1, 1),
+        frameon=False,
+        borderaxespad=0,
+        fontsize="smaller",
+    )
     ax.set_ylabel("TSI")
     plt.tight_layout()
     plt.show()
@@ -1319,7 +1420,7 @@ def test_solar_irradiance():
 def test():
 
     test_solar_irradiance()
-    test_coeffs(year=2011)
+    test_coeffs(year=2018)
     test_location()
     test_integration(lat=43.5448, lon=-80.2482)
 
