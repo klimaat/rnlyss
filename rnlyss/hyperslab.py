@@ -36,6 +36,7 @@ class HyperSlab(object):
             setattr(self, attr, self.hdf.attrs[attr])
 
         # Hyperslab time origin; New Year's + hour0 to closest minute
+        # NB. set hour0 to 0.5 for 00:30
         self.t0 = np.datetime64("%04d-01-01" % self.year) + np.timedelta64(
             int(np.rint(self.hour0 * 60)), "m"
         )
@@ -98,14 +99,14 @@ class HyperSlab(object):
                 np.rint((converter(x) - self.offset) / self.scale).astype(np.int16),
             )
 
-    def to_float(self, i):
+    def to_float(self, i, dtype=np.float):
         """
         Convert to float; real representation
         """
         return np.where(
             i == self.missing,
             np.nan,
-            np.array(i * self.scale + self.offset, dtype=np.float),
+            np.array(i * self.scale + self.offset, dtype=dtype),
         )
 
     def __getitem__(self, i):
@@ -262,12 +263,13 @@ class HyperSlab(object):
         """
         return np.rint((t - self.t0) / self.dt).astype(int)
 
-    def date2ind(self, months=1, days=1, hours=0):
+    def date2ind(self, months=1, days=1, hours=0, mins=0):
         years = (np.asarray(self.year) - 1970).astype("<M8[Y]")
         months = (np.asarray(months) - 1).astype("<m8[M]")
         days = (np.asarray(days) - 1).astype("<m8[D]")
         hours = np.asarray(hours).astype("<m8[h]")
-        return self.time2ind(years + months + days + hours)
+        mins = np.asarray(mins).astype("<m8[m]")
+        return self.time2ind(years + months + days + hours + mins)
 
     def time(self):
         return self.t0 + np.arange(len(self)) * self.dt
