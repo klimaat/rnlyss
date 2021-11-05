@@ -328,7 +328,7 @@ def orbit_noaa(utc):
     # Sun right ascension (deg)
     sra = np.degrees(
         np.arctan2(
-            np.cos(np.radians(obl)) * np.sin(np.radians(sal)), np.cos(np.radians(sal)),
+            np.cos(np.radians(obl)) * np.sin(np.radians(sal)), np.cos(np.radians(sal))
         )
     )
 
@@ -1103,10 +1103,7 @@ def fit_monthly_taus(z, Kt, lat=None, lon=None, noon_flux=False, **kwargs):
     # Loop over months
     months = list(range(1, 13))
 
-    clear_sky = {
-        "taub": [],
-        "taud": [],
-    }
+    clear_sky = {"taub": [], "taud": []}
 
     if noon_flux:
         clear_sky["Ebnoon"] = []
