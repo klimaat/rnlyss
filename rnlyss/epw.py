@@ -170,9 +170,11 @@ def blend_months(df):
 
 def write_solar_csv(path, dsets, years, lat=0, lon=0, hgt=0, tz=0, **kwargs):
 
-    # Instance the requested datasets (e.g. CFSR, CFSv2 and/or MERRA-2)
-    dset_names = [dset.upper() for dset in dsets]
-    dsets = [load_dataset(dset) for dset in dset_names]
+    # Allow passing a single instance
+    if not isinstance(dsets, (list, tuple)):
+        dsets = [dsets]
+
+    dset_names = [str(dset) for dset in dsets]
 
     # Get unique years to retrieve
 
