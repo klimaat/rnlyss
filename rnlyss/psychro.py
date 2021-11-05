@@ -187,12 +187,12 @@ def calc_wetbulb_temperature(t, td, p=P0_, eps=1e-8, n=10):
     # First guess for wet-bulb (option A)
     twb = 2 / 3 * t + 1 / 3 * td
 
-    # Cache indices with above zero temps
-    above = t >= 0
-
     dtwb = np.inf
     i = 0
     while np.abs(dtwb).max() > eps:
+
+        # Indices with above zero wet bulb temperatures
+        above = twb >= 0
 
         # Calculate vapor pressure (and derivative) at current wet-bulb
         pws_wb, dpws_wb = calc_saturation_vapor_pressure(twb, jacobian=True)
