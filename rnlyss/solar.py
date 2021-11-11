@@ -74,6 +74,110 @@ def julian_day(dates):
     return jd, fd
 
 
+def delta_time(utc, method="NASA"):
+    """
+    Estimate difference between terrestrial time (TT) and universal time (UT)
+    Returns NaNs for years outside approximations.
+    """
+
+    # Year fraction (approximate)
+    y, m, _ = split_date(utc)
+    yf = y + (m - 0.5) / 12
+
+    def poly_val(y, yn=0, an=[]):
+        dy = y - yn
+        s = np.zeros_like(y)
+        for k in range(len(an)):
+            s += an[k] * dy ** k
+        return s
+
+    if method == "SG2":
+        """
+        Based on SG2 approximations
+        Ref: Blanc and Wald 2012
+        "The SG2 algorithm for fast and accurate computation of the position of
+        the sun for multi-decadal time period"
+        Solar Energy v88, p3072--3083.
+        """
+        return np.piecewise(
+            yf,
+            [
+                (y >= 1961) & (y < 1986),
+                (y >= 1986) & (y < 2005),
+                (y >= 2005) & (y < 2050),
+            ],
+            [
+                partial(poly_val, yn=1975, an=[45.45, 1.067, -1 / 260, -1 / 718]),
+                partial(
+                    poly_val,
+                    yn=2000,
+                    an=[63.86, 0.3345, -0.060374, 0.0017275, 6.51814e-4, 2.373599e-5],
+                ),
+                partial(poly_val, yn=2000, an=[62.8938127, 0.32100612, 0.005576068]),
+                np.nan,
+            ],
+        )
+
+    """
+    Default
+    Based on polynomial approximations from
+    https://eclipse.gsfc.nasa.gov/SEcat5/deltatpoly.html
+    Just for modern era: 1800-2150
+    """
+
+    return np.piecewise(
+        yf,
+        [
+            (y >= 1800) & (y < 1860),
+            (y >= 1860) & (y < 1900),
+            (y >= 1900) & (y < 1920),
+            (y >= 1920) & (y < 1941),
+            (y >= 1941) & (y < 1961),
+            (y >= 1961) & (y < 1986),
+            (y >= 1986) & (y < 2005),
+            (y >= 2005) & (y < 2050),
+            (y >= 2050) & (y < 2150),
+        ],
+        [
+            partial(
+                poly_val,
+                yn=1800,
+                an=[
+                    13.72,
+                    -0.332447,
+                    6.8612e-3,
+                    4.1116e-3,
+                    -3.7436e-4,
+                    1.21272e-5,
+                    -1.699e-7,
+                    8.75e-10,
+                ],
+            ),
+            partial(
+                poly_val,
+                yn=1860,
+                an=[7.62, 0.5737, -0.251754, 0.01680668, -0.0004473624, 1 / 233174],
+            ),
+            partial(
+                poly_val,
+                yn=1900,
+                an=[-2.79, 1.494119, -0.0598939, 0.0061966, -0.000197],
+            ),
+            partial(poly_val, yn=1920, an=[21.20, 0.84493, -0.076100, 0.0020936]),
+            partial(poly_val, yn=1950, an=[29.07, 0.407, -1 / 233, 1 / 2547]),
+            partial(poly_val, yn=1975, an=[45.45, 1.067, -1 / 260, -1 / 718]),
+            partial(
+                poly_val,
+                yn=2000,
+                an=[63.86, 0.3345, -0.060374, 0.0017275, 6.51814e-4, 2.373599e-5],
+            ),
+            partial(poly_val, yn=2000, an=[62.92, 0.32217, 0.005589]),
+            partial(poly_val, yn=1820, an=[-20 - 330 * 0.5624, 0.5628, 0.0032]),
+            np.nan,
+        ],
+    )
+
+
 def orbit_ashrae(utc):
     """
     Calculate solar parameters based on ASHRAE methodology.
@@ -512,34 +616,8 @@ def orbit_sg2(utc):
     Converted from available Matlab functions
     """
 
-    # Evaluate polynomial
-    def poly_val(y, yn=0, an=[]):
-        dy = y - yn
-        s = np.zeros_like(y)
-        for k in range(len(an)):
-            s += an[k] * dy ** k
-        return s
-
-    # Year fraction (approximate)
-    y, m, _ = split_date(utc)
-    yf = y + (m - 0.5) / 12
-
     # Calculate difference between terrestrial time (TT) and universal time (UT)
-    # NB. Uses piecewise evaluation: the first two functions evaluate on the first two
-    # conditionals. The default period [1986, 2005) is evaluated on the third function
-    dt = np.piecewise(
-        yf,
-        [y < 1986, y >= 2005],
-        [
-            partial(poly_val, yn=1975, an=[45.45, 1.067, -1 / 260, -1 / 718]),
-            partial(poly_val, yn=2000, an=[62.8938127, 0.32100612, 0.005576068]),
-            partial(
-                poly_val,
-                yn=2000,
-                an=[63.86, 0.3345, -0.060374, 0.0017275, 0.000651814, 0.00002373599],
-            ),
-        ],
-    )
+    dt = delta_time(utc, method="SG2")
 
     # Calculate Julian day in terrestrial time
     jd, fjd = julian_day(utc)
