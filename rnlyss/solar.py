@@ -2,10 +2,9 @@
 #
 # Copyright 2019 Klimaat
 
-from __future__ import division
-
 import datetime
 import numpy as np
+from functools import partial
 
 
 def join_date(y=1970, m=1, d=1, hh=0, mm=0, ss=0):
@@ -501,6 +500,165 @@ def orbit_era5(utc):
     return sinDec, cosDec, eqnOfTime, solFactor
 
 
+def orbit_sg2(utc):
+    """
+    Orbit based on SG2 algorithm
+
+    Ref: Blanc and Wald 2012
+    "The SG2 algorithm for fast and accurate computation of the position of
+    the sun for multi-decadal time period"
+    Solar Energy v88, p3072--3083.
+
+    Converted from available Matlab functions
+    """
+
+    # Evaluate polynomial
+    def poly_val(y, yn=0, an=[]):
+        dy = y - yn
+        s = np.zeros_like(y)
+        for k in range(len(an)):
+            s += an[k] * dy ** k
+        return s
+
+    # Year fraction (approximate)
+    y, m, _ = split_date(utc)
+    yf = y + (m - 0.5) / 12
+
+    # Calculate difference between terrestrial time (TT) and universal time (UT)
+    # NB. Uses piecewise evaluation: the first two functions evaluate on the first two
+    # conditionals. The default period [1986, 2005) is evaluated on the third function
+    dt = np.piecewise(
+        yf,
+        [y < 1986, y >= 2005],
+        [
+            partial(poly_val, yn=1975, an=[45.45, 1.067, -1 / 260, -1 / 718]),
+            partial(poly_val, yn=2000, an=[62.8938127, 0.32100612, 0.005576068]),
+            partial(
+                poly_val,
+                yn=2000,
+                an=[63.86, 0.3345, -0.060374, 0.0017275, 0.000651814, 0.00002373599],
+            ),
+        ],
+    )
+
+    # Calculate Julian day in terrestrial time
+    jd, fjd = julian_day(utc)
+    j_tt = jd + fjd + dt / 86400
+
+    # Evaluate sinusoidal
+    def sin_val(j, j0=2444239.5, a=0, b=0, N=0, f=[], rho=[], phi=[]):
+        jc = j - j0
+        s = np.zeros_like(j)
+
+        # Add linear components
+        s += a * jc + b
+
+        # Add sinuisoidal components
+        for k in range(N):
+            s += rho[k] * np.cos(2 * np.pi * f[k] * jc - phi[k])
+
+        return s
+
+    # Shift values into periodic bounds
+    # If s=0, then [0, 2pi] (modulus)
+    # If s=0.5 then [-pi, pi]
+    def per_val(x, s=0, n=2 * np.pi):
+        return x - np.floor(x / n + s) * n
+
+    # Heliocentric radius
+    R = sin_val(
+        j_tt, a=0, b=1.000140, N=1, f=[1 / 365.254902], rho=[0.016704], phi=[-3.091159]
+    )
+    solFactor = (1 / R) ** 2
+
+    # Heliocentric longitude
+    L = sin_val(
+        j_tt,
+        a=1 / 58.130101,
+        b=1.742145,
+        N=10,
+        f=1.0
+        / np.asarray(
+            [
+                365.261278,
+                182.632412,
+                29.530634,
+                399.529850,
+                291.956812,
+                583.598201,
+                4652.629372,
+                1450.236684,
+                199.459709,
+                365.355291,
+            ]
+        ),
+        rho=[
+            3.401508e-2,
+            3.486440e-4,
+            3.136227e-5,
+            3.578979e-5,
+            2.676185e-5,
+            2.333925e-5,
+            1.221214e-5,
+            1.217941e-5,
+            1.343914e-5,
+            8.499475e-4,
+        ],
+        phi=[
+            1.600780,
+            1.662976,
+            -1.195905,
+            -1.042052,
+            2.012613,
+            -2.867714,
+            1.225038,
+            -0.828601,
+            -3.108253,
+            -2.353709,
+        ],
+    )
+
+    # Nutation of sun geocentric longitude [-π, π]
+    dpsi = per_val(
+        sin_val(
+            j_tt, a=0, b=0, N=1, f=[1 / 6791.164405], rho=[8.329092e-5], phi=[-2.052757]
+        ),
+        0.5,
+    )
+
+    # Stellar aberrration correction (cf. -9.933735e-5)
+    dtau = np.radians(-20.4898 / 3600)  #
+
+    # Apparent sun geocentric longitude
+    theta_a = L + np.pi + dpsi + dtau
+
+    # True earth obliquity/tilt
+    epsilon = sin_val(
+        j_tt,
+        a=-6.216374e-9,
+        b=4.091383e-1,
+        N=1,
+        f=[1 / 6791.164405],
+        rho=[4.456183e-5],
+        phi=[4.091383e-1],
+    )
+
+    # Declination
+    cos_epsilon = np.cos(epsilon)
+    sin_theta_a = np.sin(theta_a)
+    sinDec = sin_theta_a * np.sin(epsilon)
+    cosDec = np.sqrt(1 - sinDec ** 2)
+
+    # Right ascension
+    r_alpha_g = np.arctan2(sin_theta_a * cos_epsilon, np.cos(theta_a))
+
+    # Equation of time [-π, π]
+    M = sin_val(j_tt, a=1 / 58.130099904, b=-1.399410798, N=0)
+    eqnOfTime = per_val(M - 0.0001 - r_alpha_g + dpsi * cos_epsilon, s=0.5)
+
+    return sinDec, cosDec, eqnOfTime, solFactor
+
+
 def orbit(utc, method=None):
 
     if method is None:
@@ -523,6 +681,8 @@ def orbit(utc, method=None):
             func = orbit_energyplus
         elif method in ["NOAA"]:
             func = orbit_noaa
+        elif method in ["SG2"]:
+            func = orbit_sg2
         else:
             raise NotImplementedError(method)
 
@@ -725,7 +885,7 @@ def hour_angle(lon, utc, eot):
     # Move to longitude location
     H += np.radians(lon)
 
-    # Return centered in -pi to pi
+    # Return centered in -π to π
     return ((H + np.pi) % (2 * np.pi)) - np.pi
 
 
@@ -1301,6 +1461,7 @@ def perez(Eb, Ed, E0, E0h, Td):
 def test_coeffs(year=2018):
 
     import matplotlib.pyplot as plt
+    from itertools import cycle
 
     t1 = np.datetime64("%04d-01-01" % year)
     t2 = np.datetime64("%04d-01-01" % (year + 1,))
@@ -1308,13 +1469,14 @@ def test_coeffs(year=2018):
     utc = np.arange(t1, t2)
 
     f, ax = plt.subplots(4, sharex=True, figsize=(12, 9))
-    # ax = ax.flatten()
 
-    methods = ["ashrae", "energyplus", "cfsr", "merra2", "era5", "noaa"]
+    methods = ["ashrae", "energyplus", "cfsr", "merra2", "era5", "noaa", "sg2"]
+    line_cycler = cycle(["-", "--", "-.", ":"])
     for method in methods:
         coeffs = orbit(utc, method=method)
+        ls = next(line_cycler)
         for i, ylabel in enumerate(["sinDec", "cosDec", "eqnOfTime", "solFactor"]):
-            ax[i].plot(utc, coeffs[i], lw=2, label=method)
+            ax[i].plot(utc, coeffs[i], ls=ls, lw=2, label=method)
             ax[i].set_ylabel(ylabel)
 
     ax[0].legend(
