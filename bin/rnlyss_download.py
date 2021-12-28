@@ -45,6 +45,10 @@ def main():
     )
 
     parser.add_argument(
+        "--hof", action="store_true", help="Download Handbook variables"
+    )
+
+    parser.add_argument(
         "-i", "--ignore", action="store_true", help="Ignore date and file size check"
     )
 
@@ -52,6 +56,13 @@ def main():
 
     # Get dataset module
     dset = rnlyss.dataset.load_dataset(args.dset)
+
+    # Get Handbook required variables
+    if args.hof:
+        dvars = [dset.get_dvar(_) for _ in ["tas", "tdps", "huss", "ps", "uas", "vas"]]
+        if args.dvars:
+            dvars += args.dvars
+        args.dvars = sorted(list({_ for _ in dvars if _ is not None}))
 
     # Instance associated stacker
     dset.download(**vars(args))
