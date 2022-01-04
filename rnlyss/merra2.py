@@ -462,11 +462,14 @@ class MERRA2(Dataset):
             url += urlencode(params)
 
             # Grab it
-            get_file(url, dst)
+            result = get_file(url, dst)
 
             # Set modification date
-            if os.path.isfile(dst):
+            if result and os.path.isfile(dst):
                 os.utime(dst, (last_modified, last_modified))
+                return True
+
+            return False
 
         # Release the sloths...
         for dvar in sorted(dvars):
@@ -485,7 +488,12 @@ class MERRA2(Dataset):
                 for year, month in self.iter_year_month(years, months):
                     days = range(1, calendar.monthrange(year, month)[1] + 1)
                     for day in days:
-                        get_hourly_file(dvar, year, month, day)
+                        result = get_hourly_file(dvar, year, month, day)
+                        if not result:
+                            break
+                    else:
+                        continue
+                    break
 
         return
 
