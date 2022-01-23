@@ -4,7 +4,12 @@
 
 import os
 import numpy as np
+
+# fmt: off
+import mpi4py
+mpi4py.rc.initialize = False
 import h5py
+# fmt: on
 
 from rnlyss.util import DelayedKeyboardInterrupt
 
@@ -167,27 +172,19 @@ class HyperSlab(object):
         shape = shape + (nt,)
 
         # Create a dataset of integers
-        self.hdf.create_dataset(
-            "data", shape=shape, dtype=np.int16, fillvalue=missing,
-        )
+        self.hdf.create_dataset("data", shape=shape, dtype=np.int16, fillvalue=missing)
 
         # Create a boolean dataset initialized to False to store
         # whether given time slice has been filled
-        self.hdf.create_dataset(
-            "full", shape=(nt,), dtype=np.bool, fillvalue=False,
-        )
+        self.hdf.create_dataset("full", shape=(nt,), dtype=np.bool, fillvalue=False)
 
         # Create a int16 dataset initialized to missing to store
         # the minimum value of a given time slice
-        self.hdf.create_dataset(
-            "min", shape=(nt,), dtype=np.int16, fillvalue=missing,
-        )
+        self.hdf.create_dataset("min", shape=(nt,), dtype=np.int16, fillvalue=missing)
 
         # Create a int16 dataset initialized to mussubg to store
         # the maximum value of a given time slice
-        self.hdf.create_dataset(
-            "max", shape=(nt,), dtype=np.int16, fillvalue=missing,
-        )
+        self.hdf.create_dataset("max", shape=(nt,), dtype=np.int16, fillvalue=missing)
 
         # Flush buffers
         self.hdf.flush()
