@@ -737,6 +737,542 @@ def orbit_sg2(utc):
     return sinDec, cosDec, eqnOfTime, solFactor
 
 
+def orbit_spa(utc):
+    """
+    Orbit based on NREL's SPA algorithm
+
+    Ref: I. Reda and A. Andreas
+    "Solar Position Algorithms for Solar Radiation Applications"
+    NREL/TP-560-34302, Jan 2008.
+    """
+
+    # Julian date
+    jd, fjd = julian_day(utc)
+    jd = jd + fjd
+
+    # Calculate difference between terrestrial time (TT) and universal time (UT)
+    dt = delta_time(utc)
+
+    # Julian emphemeris cenutry
+    jce = (jd + dt / 86400.0 - 2451545) / 36525
+
+    # Julian emphemeris millenium
+    jme = jce / 10
+
+    # Calculate quantities by summing terms
+    def sum_terms(jme, ABC):
+        sx = 0
+        for i, x in enumerate(ABC):
+            sy = 0
+            for y in x:
+                # y = [A, B, C]
+                sy += y[0] * np.cos(y[1] + y[2] * jme)
+            sx += sy * jme ** i
+        return sx / 1e8
+
+    # Earth heliocentric longitude
+
+    L_ABC = [
+        [
+            [175347046.0, 0, 0],
+            [3341656.0, 4.6692568, 6283.07585],
+            [34894.0, 4.6261, 12566.1517],
+            [3497.0, 2.7441, 5753.3849],
+            [3418.0, 2.8289, 3.5231],
+            [3136.0, 3.6277, 77713.7715],
+            [2676.0, 4.4181, 7860.4194],
+            [2343.0, 6.1352, 3930.2097],
+            [1324.0, 0.7425, 11506.7698],
+            [1273.0, 2.0371, 529.691],
+            [1199.0, 1.1096, 1577.3435],
+            [990, 5.233, 5884.927],
+            [902, 2.045, 26.298],
+            [857, 3.508, 398.149],
+            [780, 1.179, 5223.694],
+            [753, 2.533, 5507.553],
+            [505, 4.583, 18849.228],
+            [492, 4.205, 775.523],
+            [357, 2.92, 0.067],
+            [317, 5.849, 11790.629],
+            [284, 1.899, 796.298],
+            [271, 0.315, 10977.079],
+            [243, 0.345, 5486.778],
+            [206, 4.806, 2544.314],
+            [205, 1.869, 5573.143],
+            [202, 2.458, 6069.777],
+            [156, 0.833, 213.299],
+            [132, 3.411, 2942.463],
+            [126, 1.083, 20.775],
+            [115, 0.645, 0.98],
+            [103, 0.636, 4694.003],
+            [102, 0.976, 15720.839],
+            [102, 4.267, 7.114],
+            [99, 6.21, 2146.17],
+            [98, 0.68, 155.42],
+            [86, 5.98, 161000.69],
+            [85, 1.3, 6275.96],
+            [85, 3.67, 71430.7],
+            [80, 1.81, 17260.15],
+            [79, 3.04, 12036.46],
+            [75, 1.76, 5088.63],
+            [74, 3.5, 3154.69],
+            [74, 4.68, 801.82],
+            [70, 0.83, 9437.76],
+            [62, 3.98, 8827.39],
+            [61, 1.82, 7084.9],
+            [57, 2.78, 6286.6],
+            [56, 4.39, 14143.5],
+            [56, 3.47, 6279.55],
+            [52, 0.19, 12139.55],
+            [52, 1.33, 1748.02],
+            [51, 0.28, 5856.48],
+            [49, 0.49, 1194.45],
+            [41, 5.37, 8429.24],
+            [41, 2.4, 19651.05],
+            [39, 6.17, 10447.39],
+            [37, 6.04, 10213.29],
+            [37, 2.57, 1059.38],
+            [36, 1.71, 2352.87],
+            [36, 1.78, 6812.77],
+            [33, 0.59, 17789.85],
+            [30, 0.44, 83996.85],
+            [30, 2.74, 1349.87],
+            [25, 3.16, 4690.48],
+        ],
+        [
+            [628331966747.0, 0, 0],
+            [206059.0, 2.678235, 6283.07585],
+            [4303.0, 2.6351, 12566.1517],
+            [425.0, 1.59, 3.523],
+            [119.0, 5.796, 26.298],
+            [109.0, 2.966, 1577.344],
+            [93, 2.59, 18849.23],
+            [72, 1.14, 529.69],
+            [68, 1.87, 398.15],
+            [67, 4.41, 5507.55],
+            [59, 2.89, 5223.69],
+            [56, 2.17, 155.42],
+            [45, 0.4, 796.3],
+            [36, 0.47, 775.52],
+            [29, 2.65, 7.11],
+            [21, 5.34, 0.98],
+            [19, 1.85, 5486.78],
+            [19, 4.97, 213.3],
+            [17, 2.99, 6275.96],
+            [16, 0.03, 2544.31],
+            [16, 1.43, 2146.17],
+            [15, 1.21, 10977.08],
+            [12, 2.83, 1748.02],
+            [12, 3.26, 5088.63],
+            [12, 5.27, 1194.45],
+            [12, 2.08, 4694],
+            [11, 0.77, 553.57],
+            [10, 1.3, 6286.6],
+            [10, 4.24, 1349.87],
+            [9, 2.7, 242.73],
+            [9, 5.64, 951.72],
+            [8, 5.3, 2352.87],
+            [6, 2.65, 9437.76],
+            [6, 4.67, 4690.48],
+        ],
+        [
+            [52919.0, 0, 0],
+            [8720.0, 1.0721, 6283.0758],
+            [309.0, 0.867, 12566.152],
+            [27, 0.05, 3.52],
+            [16, 5.19, 26.3],
+            [16, 3.68, 155.42],
+            [10, 0.76, 18849.23],
+            [9, 2.06, 77713.77],
+            [7, 0.83, 775.52],
+            [5, 4.66, 1577.34],
+            [4, 1.03, 7.11],
+            [4, 3.44, 5573.14],
+            [3, 5.14, 796.3],
+            [3, 6.05, 5507.55],
+            [3, 1.19, 242.73],
+            [3, 6.12, 529.69],
+            [3, 0.31, 398.15],
+            [3, 2.28, 553.57],
+            [2, 4.38, 5223.69],
+            [2, 3.75, 0.98],
+        ],
+        [
+            [289.0, 5.844, 6283.076],
+            [35, 0, 0],
+            [17, 5.49, 12566.15],
+            [3, 5.2, 155.42],
+            [1, 4.72, 3.52],
+            [1, 5.3, 18849.23],
+            [1, 5.97, 242.73],
+        ],
+        [[114.0, 3.142, 0], [8, 4.13, 6283.08], [1, 3.84, 12566.15]],
+        [[1, 3.14, 0]],
+    ]
+
+    L = np.degrees(sum_terms(jme, L_ABC)) % 360
+
+    # Earth heliocentric latitude
+
+    B_ABC = [
+        [
+            [280.0, 3.199, 84334.662],
+            [102.0, 5.422, 5507.553],
+            [80, 3.88, 5223.69],
+            [44, 3.7, 2352.87],
+            [32, 4, 1577.34],
+        ],
+        [[9, 3.9, 5507.55], [6, 1.73, 5223.69]],
+    ]
+
+    B = np.degrees(sum_terms(jme, B_ABC))
+
+    # Earth radius vector (AU)
+
+    R_ABC = [
+        [
+            [100013989.0, 0, 0],
+            [1670700.0, 3.0984635, 6283.07585],
+            [13956.0, 3.05525, 12566.1517],
+            [3084.0, 5.1985, 77713.7715],
+            [1628.0, 1.1739, 5753.3849],
+            [1576.0, 2.8469, 7860.4194],
+            [925.0, 5.453, 11506.77],
+            [542.0, 4.564, 3930.21],
+            [472.0, 3.661, 5884.927],
+            [346.0, 0.964, 5507.553],
+            [329.0, 5.9, 5223.694],
+            [307.0, 0.299, 5573.143],
+            [243.0, 4.273, 11790.629],
+            [212.0, 5.847, 1577.344],
+            [186.0, 5.022, 10977.079],
+            [175.0, 3.012, 18849.228],
+            [110.0, 5.055, 5486.778],
+            [98, 0.89, 6069.78],
+            [86, 5.69, 15720.84],
+            [86, 1.27, 161000.69],
+            [65, 0.27, 17260.15],
+            [63, 0.92, 529.69],
+            [57, 2.01, 83996.85],
+            [56, 5.24, 71430.7],
+            [49, 3.25, 2544.31],
+            [47, 2.58, 775.52],
+            [45, 5.54, 9437.76],
+            [43, 6.01, 6275.96],
+            [39, 5.36, 4694],
+            [38, 2.39, 8827.39],
+            [37, 0.83, 19651.05],
+            [37, 4.9, 12139.55],
+            [36, 1.67, 12036.46],
+            [35, 1.84, 2942.46],
+            [33, 0.24, 7084.9],
+            [32, 0.18, 5088.63],
+            [32, 1.78, 398.15],
+            [28, 1.21, 6286.6],
+            [28, 1.9, 6279.55],
+            [26, 4.59, 10447.39],
+        ],
+        [
+            [103019.0, 1.10749, 6283.07585],
+            [1721.0, 1.0644, 12566.1517],
+            [702.0, 3.142, 0],
+            [32, 1.02, 18849.23],
+            [31, 2.84, 5507.55],
+            [25, 1.32, 5223.69],
+            [18, 1.42, 1577.34],
+            [10, 5.91, 10977.08],
+            [9, 1.42, 6275.96],
+            [9, 0.27, 5486.78],
+        ],
+        [
+            [4359.0, 5.7846, 6283.0758],
+            [124.0, 5.579, 12566.152],
+            [12, 3.14, 0],
+            [9, 3.63, 77713.77],
+            [6, 1.87, 5573.14],
+            [3, 5.47, 18849.23],
+        ],
+        [[145.0, 4.273, 6283.076], [7, 3.92, 12566.15]],
+        [[4, 2.56, 6283.08]],
+    ]
+
+    R = sum_terms(jme, R_ABC)
+    solFactor = (1 / R) ** 2
+
+    # Geocentric longitude, latitude
+    theta = (L + 180) % 360
+    beta = np.radians(-B)
+
+    # Third-order polynomial evaluation
+    def poly3_val(x, a, b, c, d):
+        return ((a * x + b) * x + c) * x + d
+
+    # Mean elongation moon sun
+    X0 = poly3_val(jce, 1.0 / 189474.0, -0.0019142, 445267.11148, 297.85036)
+
+    # Mean anomaly sun
+    X1 = poly3_val(jce, -1.0 / 300000.0, -0.0001603, 35999.05034, 357.52772)
+
+    # Mean anomaly moon
+    X2 = poly3_val(jce, 1.0 / 56250.0, 0.0086972, 477198.867398, 134.96298)
+
+    # Argument latitude moon
+    X3 = poly3_val(jce, 1.0 / 327270.0, -0.0036825, 483202.017538, 93.27191)
+
+    # Ascending longitude moon
+    X4 = poly3_val(jce, 1.0 / 450000.0, 0.0020708, -1934.136261, 125.04452)
+
+    # Y coefficients from Table A4.3
+    Y = [
+        [0, 0, 0, 0, 1],
+        [-2, 0, 0, 2, 2],
+        [0, 0, 0, 2, 2],
+        [0, 0, 0, 0, 2],
+        [0, 1, 0, 0, 0],
+        [0, 0, 1, 0, 0],
+        [-2, 1, 0, 2, 2],
+        [0, 0, 0, 2, 1],
+        [0, 0, 1, 2, 2],
+        [-2, -1, 0, 2, 2],
+        [-2, 0, 1, 0, 0],
+        [-2, 0, 0, 2, 1],
+        [0, 0, -1, 2, 2],
+        [2, 0, 0, 0, 0],
+        [0, 0, 1, 0, 1],
+        [2, 0, -1, 2, 2],
+        [0, 0, -1, 0, 1],
+        [0, 0, 1, 2, 1],
+        [-2, 0, 2, 0, 0],
+        [0, 0, -2, 2, 1],
+        [2, 0, 0, 2, 2],
+        [0, 0, 2, 2, 2],
+        [0, 0, 2, 0, 0],
+        [-2, 0, 1, 2, 2],
+        [0, 0, 0, 2, 0],
+        [-2, 0, 0, 2, 0],
+        [0, 0, -1, 2, 1],
+        [0, 2, 0, 0, 0],
+        [2, 0, -1, 0, 1],
+        [-2, 2, 0, 2, 2],
+        [0, 1, 0, 0, 1],
+        [-2, 0, 1, 0, 1],
+        [0, -1, 0, 0, 1],
+        [0, 0, 2, -2, 0],
+        [2, 0, -1, 2, 1],
+        [2, 0, 1, 2, 2],
+        [0, 1, 0, 2, 2],
+        [-2, 1, 1, 0, 0],
+        [0, -1, 0, 2, 2],
+        [2, 0, 0, 2, 1],
+        [2, 0, 1, 0, 0],
+        [-2, 0, 2, 2, 2],
+        [-2, 0, 1, 2, 1],
+        [2, 0, -2, 0, 1],
+        [2, 0, 0, 0, 1],
+        [0, -1, 1, 0, 0],
+        [-2, -1, 0, 2, 1],
+        [-2, 0, 0, 0, 1],
+        [0, 0, 2, 2, 1],
+        [-2, 0, 2, 0, 1],
+        [-2, 1, 0, 2, 1],
+        [0, 0, 1, -2, 0],
+        [-1, 0, 1, 0, 0],
+        [-2, 1, 0, 0, 0],
+        [1, 0, 0, 0, 0],
+        [0, 0, 1, 2, 0],
+        [0, 0, -2, 2, 2],
+        [-1, -1, 1, 0, 0],
+        [0, 1, 1, 0, 0],
+        [0, -1, 1, 2, 2],
+        [2, -1, -1, 2, 2],
+        [0, 0, 3, 2, 2],
+        [2, -1, 0, 2, 2],
+    ]
+
+    # abcd coefficients from Table A4.3
+    abcd = [
+        [-171996, -174.2, 92025, 8.9],
+        [-13187, -1.6, 5736, -3.1],
+        [-2274, -0.2, 977, -0.5],
+        [2062, 0.2, -895, 0.5],
+        [1426, -3.4, 54, -0.1],
+        [712, 0.1, -7, 0],
+        [-517, 1.2, 224, -0.6],
+        [-386, -0.4, 200, 0],
+        [-301, 0, 129, -0.1],
+        [217, -0.5, -95, 0.3],
+        [-158, 0, 0, 0],
+        [129, 0.1, -70, 0],
+        [123, 0, -53, 0],
+        [63, 0, 0, 0],
+        [63, 0.1, -33, 0],
+        [-59, 0, 26, 0],
+        [-58, -0.1, 32, 0],
+        [-51, 0, 27, 0],
+        [48, 0, 0, 0],
+        [46, 0, -24, 0],
+        [-38, 0, 16, 0],
+        [-31, 0, 13, 0],
+        [29, 0, 0, 0],
+        [29, 0, -12, 0],
+        [26, 0, 0, 0],
+        [-22, 0, 0, 0],
+        [21, 0, -10, 0],
+        [17, -0.1, 0, 0],
+        [16, 0, -8, 0],
+        [-16, 0.1, 7, 0],
+        [-15, 0, 9, 0],
+        [-13, 0, 7, 0],
+        [-12, 0, 6, 0],
+        [11, 0, 0, 0],
+        [-10, 0, 5, 0],
+        [-8, 0, 3, 0],
+        [7, 0, -3, 0],
+        [-7, 0, 0, 0],
+        [-7, 0, 3, 0],
+        [-7, 0, 3, 0],
+        [6, 0, 0, 0],
+        [6, 0, -3, 0],
+        [6, 0, -3, 0],
+        [-6, 0, 3, 0],
+        [-6, 0, 3, 0],
+        [5, 0, 0, 0],
+        [-5, 0, 3, 0],
+        [-5, 0, 3, 0],
+        [-5, 0, 3, 0],
+        [4, 0, 0, 0],
+        [4, 0, 0, 0],
+        [4, 0, 0, 0],
+        [-4, 0, 0, 0],
+        [-4, 0, 0, 0],
+        [-4, 0, 0, 0],
+        [3, 0, 0, 0],
+        [-3, 0, 0, 0],
+        [-3, 0, 0, 0],
+        [-3, 0, 0, 0],
+        [-3, 0, 0, 0],
+        [-3, 0, 0, 0],
+        [-3, 0, 0, 0],
+        [-3, 0, 0, 0],
+    ]
+
+    # Nutation in longitude and obliquity
+    dpsi = np.zeros_like(jce)
+    depsilon = np.zeros_like(jce)
+
+    for i in range(len(Y)):
+        xy = np.radians(
+            X0 * Y[i][0] + X1 * Y[i][1] + X2 * Y[i][2] + X3 * Y[i][3] + X4 * Y[i][4]
+        )
+        dpsi += (abcd[i][0] + abcd[i][1] * jce) * np.sin(xy)
+        depsilon += (abcd[i][2] + abcd[i][3] * jce) * np.cos(xy)
+
+    dpsi /= 36000000
+    depsilon /= 36000000
+
+    # Mean obliquity of the ecliptic (temp.)
+    epsilon0 = 2.45 * np.ones_like(jme)
+
+    for coeff in [
+        5.79,
+        27.87,
+        7.12,
+        -39.05,
+        -249.67,
+        -51.38,
+        1999.25,
+        -1.55,
+        -4680.93,
+        84381.448,
+    ]:
+        epsilon0 *= jme
+        epsilon0 /= 10
+        epsilon0 += coeff
+
+    # True obliquity of the ecliptic
+    epsilon = np.radians(epsilon0 / 3600 + depsilon)
+
+    # Aberration correction
+    dtau = -20.4898 / (3600 * R)
+
+    # Apparent sun longitude
+    lambda_ = np.radians(theta + dpsi + dtau)
+
+    # Right ascension (degrees)
+    alpha = (
+        np.degrees(
+            np.arctan2(
+                np.sin(lambda_) * np.cos(epsilon) - np.tan(beta) * np.sin(epsilon),
+                np.cos(lambda_),
+            )
+        )
+        % 360
+    )
+
+    # Declination
+    sinDec = np.sin(beta) * np.cos(epsilon) + np.cos(beta) * np.sin(epsilon) * np.sin(
+        lambda_
+    )
+    cosDec = np.sqrt(1 - sinDec ** 2)
+
+    # Sun mean longitude
+    M = (1 / 2000000) * np.ones_like(jme)
+    for coeff in [-1 / 15300.0, 1 / 49931.0, 0.03032028, 360007.6982779, 280.4664567]:
+        M *= jme
+        M += coeff
+    M %= 360
+
+    # Equation of time (radians)
+    eqnOfTime = M - 0.0057183 - alpha + dpsi * np.cos(epsilon)
+    eqnOfTime = ((eqnOfTime + 180) % 360) - 180
+    eqnOfTime *= np.pi / 180
+
+    return sinDec, cosDec, eqnOfTime, solFactor
+
+
+def orbit_aa(utc):
+    """
+    Orbit based on the "low precision" formulas in the Astronomical Almanac
+
+    Ref: The Astronomical Almanac for the year 2019, pg. C5
+
+    NB: Suitable for use between 1950 and 2050
+    """
+
+    jd, fjd = julian_day(utc)
+    n = jd + fjd - 2451545.0
+
+    # Mean longitude of sun (degrees)
+    L = (280.460 + 0.9856474 * n) % 360
+
+    # Mean anomaly (radians)
+    g = np.radians((357.528 + 0.9856003 * n) % 360)
+
+    # Ecliptic longitude (radians)
+    lambda_ = np.radians((L + 1.915 * np.sin(g) + 0.020 * np.sin(2 * g)) % 360)
+
+    # Obliquity of the ecliptic (radians)
+    epsilon = np.radians(23.439 - 0.0000004 * n)
+
+    # Right ascension (radians)
+    alpha = np.arctan2(np.cos(epsilon) * np.sin(lambda_), np.cos(lambda_)) % (2 * np.pi)
+
+    # Declination (radians)
+    sinDec = np.sin(epsilon) * np.sin(lambda_)
+    cosDec = np.sqrt(1 - sinDec ** 2)
+
+    # Earth-sun radius (au)
+    R = 1.00014 - 0.01671 * np.cos(g) - 0.00014 * np.cos(2 * g)
+    solFactor = (1 / R) ** 2
+
+    # Equation of time (radians)
+    eqnOfTime = L - np.degrees(alpha)
+    eqnOfTime = ((eqnOfTime + 180) % 360) - 180
+    eqnOfTime *= np.pi / 180
+
+    return sinDec, cosDec, eqnOfTime, solFactor
+
+
 def orbit(utc, method=None):
 
     if method is None:
@@ -753,7 +1289,7 @@ def orbit(utc, method=None):
             func = orbit_cfsr
         elif method == "MERRA2":
             func = orbit_merra2
-        elif method == "ERA5":
+        elif method == ["ERA5"]:
             func = orbit_era5
         elif method in ["EPW", "ENERGYPLUS"]:
             func = orbit_energyplus
@@ -761,6 +1297,10 @@ def orbit(utc, method=None):
             func = orbit_noaa
         elif method in ["SG2"]:
             func = orbit_sg2
+        elif method in ["SPA"]:
+            func = orbit_spa
+        elif method in ["AA"]:
+            func = orbit_aa
         else:
             raise NotImplementedError(method)
 
@@ -913,11 +1453,89 @@ def total_solar_irradiance_merra2(utc):
     return 0.9965 * TSI[i, j]
 
 
-def total_solar_irradiance(utc, method=None):
+def total_solar_irradiance_ceres(utc):
+    """
+    Calculate MERRA-2 total solar irradiance (W/m²) based on year and month
+    """
+
+    year, month, _ = split_date(utc)
+
+    # CERES data (2000-), monthly-averaged from daily data
+    # https://ceres.larc.nasa.gov/documents/TSIdata/CERES_EBAF_Ed2.8_DailyTSI.txt
+    # fmt: off
+    TSI = np.array([
+        [1361.7523, 1361.6588, 1361.2588, 1361.5421, 1361.2730, 1361.3547,
+         1361.4249, 1361.8603, 1361.3916, 1362.0602, 1361.8426, 1361.9997],
+        [1361.9507, 1362.0393, 1361.4560, 1361.3103, 1361.4601, 1361.2170,
+         1361.5496, 1361.2858, 1361.1207, 1361.7364, 1361.5359, 1361.8668],
+        [1362.2816, 1362.2365, 1362.0543, 1361.5156, 1361.5108, 1361.5701,
+         1360.9777, 1361.0790, 1361.3704, 1361.3915, 1361.3571, 1361.7648],
+        [1361.6470, 1361.6172, 1361.0791, 1361.1044, 1361.1351, 1360.9831,
+         1361.0729, 1361.1855, 1361.2915, 1360.2710, 1361.0254, 1361.2098],
+        [1360.9773, 1360.9998, 1360.9793, 1361.0765, 1360.9440, 1360.8673,
+         1360.5674, 1360.6825, 1360.9527, 1360.9588, 1360.9009, 1361.0936],
+        [1360.6672, 1360.8620, 1360.8105, 1360.7953, 1360.7050, 1360.6961,
+         1360.7407, 1360.8234, 1360.6588, 1360.8185, 1360.6546, 1360.7211],
+        [1360.7894, 1360.7615, 1360.6741, 1360.6472, 1360.8229, 1360.7264,
+         1360.6669, 1360.5537, 1360.6818, 1360.6736, 1360.4766, 1360.5116],
+        [1360.5543, 1360.5729, 1360.6214, 1360.5625, 1360.5688, 1360.5950,
+         1360.5655, 1360.5839, 1360.5460, 1360.5444, 1360.5241, 1360.5330],
+        [1360.6021, 1360.5580, 1360.5020, 1360.5839, 1360.5476, 1360.5168,
+         1360.4947, 1360.5073, 1360.5076, 1360.5320, 1360.5206, 1360.5212],
+        [1360.5372, 1360.5282, 1360.5189, 1360.5056, 1360.5778, 1360.5473,
+         1360.5364, 1360.5262, 1360.5499, 1360.5682, 1360.6239, 1360.5945],
+        [1360.6734, 1360.7997, 1360.7470, 1360.8194, 1360.7880, 1360.7623,
+         1360.8402, 1360.8097, 1360.8478, 1360.7767, 1360.8630, 1360.8290],
+        [1360.8152, 1360.8242, 1360.8258, 1361.1585, 1361.1855, 1361.1634,
+         1361.0289, 1360.9692, 1360.9470, 1361.1160, 1361.3190, 1361.4280],
+        [1361.3137, 1361.3170, 1361.1408, 1361.2121, 1361.0881, 1361.1641,
+         1360.9261, 1361.3606, 1361.4553, 1361.2822, 1361.2450, 1361.3706],
+        [1361.1591, 1361.2902, 1361.3131, 1361.1774, 1361.3727, 1361.4137,
+         1361.3053, 1361.3203, 1361.3012, 1360.9826, 1360.9674, 1361.1100],
+        [1360.9067, 1360.5850, 1361.3852, 1361.2392, 1361.1794, 1361.0998,
+         1361.1083, 1361.3099, 1361.3081, 1360.7533, 1361.4756, 1361.4171],
+        [1361.5310, 1361.8810, 1361.6700, 1361.6641, 1361.4683, 1361.3103,
+         1361.4573, 1361.1615, 1361.1014, 1361.3090, 1361.3597, 1361.2478],
+        [1361.2843, 1361.3002, 1361.1816, 1360.8649, 1360.9579, 1361.0261,
+         1360.9439, 1360.9476, 1360.9391, 1360.8935, 1360.8895, 1360.8105],
+        [1360.3090, 1360.8225, 1360.7377, 1360.7796, 1360.7895, 1360.8099,
+         1360.6574, 1360.6783, 1360.5297, 1360.8332, 1360.7905, 1360.7246],
+        [1360.6759, 1360.6293, 1360.6488, 1360.6817, 1360.7066, 1360.7269,
+         1360.7280, 1360.7113, 1360.7056, 1360.6902, 1360.6697, 1360.6469],
+        [1360.6618, 1360.6728, 1360.6655, 1360.6054, 1360.6596, 1360.6880,
+         1360.6985, 1360.6561, 1360.6628, 1360.6578, 1360.6468, 1360.6548],
+        [1360.6664, 1360.6565, 1360.6744, 1360.6801, 1360.7391, 1360.7473,
+         1360.7353, 1360.8115, 1360.7637, 1360.7909, 1360.7609, 1360.9386],
+        [1360.9440, 1360.8790, 1360.9140, 1360.8687, 1360.8783, 1360.9566,
+         1361.0599, 1361.0228, 1360.9877, 1361.0305, np.nan, np.nan],
+        [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan,
+         np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
+    ])
+    # fmt: on
+    n = TSI.shape[0]
+
+    # Index year
+    i = np.asarray(year).astype(int) - 2000
+
+    # Return none outside available data
+    i[i < 0] = -1
+    i[i > n - 1] = -1
+
+    # Index month
+    j = np.asarray(month).astype(int) - 1
+
+    # Lookup
+    return TSI[i, j]
+
+
+def total_solar_irradiance(utc, constant=None, method=None):
     """
     Calculate the total solar irradiance (W/m²) for given year.
     Year can be fractional.
     """
+
+    if constant is not None:
+        return float(constant) * np.ones_like(utc, dtype=float)
 
     if method is None:
         method = "ASHRAE"
@@ -933,12 +1551,14 @@ def total_solar_irradiance(utc, method=None):
             func = total_solar_irradiance_cfsr
         elif method == "MERRA2":
             func = total_solar_irradiance_merra2
-        elif method == "ERA5":
+        elif method == ["ERA5"]:
             func = total_solar_irradiance_era5
         elif method in ["EPW", "ENERGYPLUS"]:
             func = total_solar_irradiance_ashrae
         elif method in ["NOAA"]:
             func = total_solar_irradiance_ashrae
+        elif method in ["CERES"]:
+            func = total_solar_irradiance_ceres
         else:
             raise NotImplementedError(method)
 
@@ -1019,7 +1639,7 @@ def clear_sky_irradiance(z, tb, td, E0):
     return E0 * np.exp(-tb * m ** ab), E0 * np.exp(-td * m ** ad)
 
 
-def elevation(lat, lon, utc, method="ASHRAE", interval=None, h=None):
+def elevation(lat, lon, utc, method="ASHRAE", constant=None, interval=None, h=None):
     """
     Calculate the elevation z and extraterrestrial radiation E0 at
     (lat, lon) and UTC time.
@@ -1035,7 +1655,7 @@ def elevation(lat, lon, utc, method="ASHRAE", interval=None, h=None):
     sinDec, cosDec, eqnOfTime, solFactor = orbit(utc, method=method)
 
     # Calculate extraterrestrial radiance at UTC
-    E0 = solFactor * total_solar_irradiance(utc, method=method)
+    E0 = solFactor * total_solar_irradiance(utc, constant=constant, method=method)
 
     # Latitudinal sines
     sinLat = np.sin(np.radians(lat))
@@ -1548,7 +2168,17 @@ def test_coeffs(year=2018):
 
     f, ax = plt.subplots(4, sharex=True, figsize=(12, 9))
 
-    methods = ["ashrae", "energyplus", "cfsr", "merra2", "era5", "noaa", "sg2"]
+    methods = [
+        "ashrae",
+        "energyplus",
+        "cfsr",
+        "merra2",
+        "era5",
+        "noaa",
+        "sg2",
+        "spa",
+        "aa",
+    ]
     line_cycler = cycle(["-", "--", "-.", ":"])
     for method in methods:
         coeffs = orbit(utc, method=method)
@@ -1629,13 +2259,13 @@ def test_solar_irradiance():
 
     import matplotlib.pyplot as plt
 
-    years, months = np.mgrid[1979:2019, 1:13]
+    years, months = np.mgrid[1979:2024, 1:13]
 
     utc = join_date(y=years.flatten(), m=months.flatten())
 
     f, ax = plt.subplots(figsize=(9, 6))
 
-    methods = ["ashrae", "cfsr", "merra2", "era5"]
+    methods = ["ashrae", "cfsr", "merra2", "era5", "ceres"]
     for method in methods:
         tsi = total_solar_irradiance(utc, method=method)
         ax.plot_date(
@@ -1659,10 +2289,10 @@ def test_solar_irradiance():
 
 def test():
 
-    test_solar_irradiance()
-    test_coeffs(year=2018)
+    # test_solar_irradiance()
+    # test_coeffs(year=2018)
     test_location()
-    test_integration(lat=43.5448, lon=-80.2482)
+    # test_integration(lat=43.5448, lon=-80.2482)
 
 
 if __name__ == "__main__":
