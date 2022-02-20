@@ -27,8 +27,17 @@ def import_module(dset, root="rnlyss"):
     try:
         return importlib.import_module("%s.%s" % (root.lower(), dset.lower()))
     except ImportError:
-        print("Specify one of %r" % (DATASETS))
-        raise SystemExit
+        raise ValueError("Specify one of %r" % (DATASETS))
+
+
+def match_class(dset):
+    """
+    Search for matching class (case-insensitive) given dataset
+    """
+    for cls_ in DATASETS:
+        if cls_.upper() == dset.upper():
+            return cls_
+    raise ValueError("Specify one of %r" % DATASETS)
 
 
 def import_class(dset):
@@ -36,15 +45,16 @@ def import_class(dset):
     Import corresponding class for dset
     """
     mod = import_module(dset)
-    return getattr(mod, dset.upper())
+    cls_ = match_class(dset)
+    return getattr(mod, cls_)
 
 
 def load_dataset(dset, **kwargs):
     """
     Load a reanalsysis source by name. e.g. "CFSv2" via magic.
     """
-    cls = import_class(dset)
-    return cls(**kwargs)
+    cls_ = import_class(dset)
+    return cls_(**kwargs)
 
 
 def get_config_dir(config_file, dset):
@@ -673,6 +683,7 @@ class Dataset(object):
 
         if plot:
             import matplotlib.pyplot as plt
+
             plt.rc("text", usetex=True)
             plt.rc("text.latex", unicode=True)
             plt.rc("text.latex", preamble=r"\usepackage{cmbright}")
