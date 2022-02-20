@@ -3,10 +3,10 @@
 # Copyright 2019 Klimaat
 
 from rnlyss.grid import GaussianGrid
-from rnlyss.cfsv2 import CFSV2
+from rnlyss.cfsv2 import CFSv2
 
 
-class CFSR(CFSV2):
+class CFSR(CFSv2):
 
     # Time
     years = 1979, 2010

@@ -22,7 +22,7 @@ except ImportError:
     raise NotImplementedError("pygrib req'd to read CFS datasets")
 
 
-class CFSV2(Dataset):
+class CFSv2(Dataset):
 
     # Dataset variables
     # NB: Due to storage of source files, some positive-only variables may
@@ -650,7 +650,7 @@ class CFSV2(Dataset):
 
 def main():
     # Create CFSv2 instance
-    C = CFSV2()
+    C = CFSv2()
 
     # Extract air temperature at 2m at a given location into a Pandas Series
     # (return the nearest location)
