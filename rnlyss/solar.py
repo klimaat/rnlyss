@@ -1613,7 +1613,7 @@ def position(lat, lon, utc, method="ASHRAE"):
     cosLat = np.cos(np.radians(lat))
 
     return (
-        cosDec * sinH,
+        -cosDec * sinH,
         sinDec * cosLat - cosDec * sinLat * cosH,
         sinDec * sinLat + cosDec * cosLat * cosH,
     )
@@ -1872,7 +1872,7 @@ def to_azimuth(x, y):
     Convert x, y of solar vector into azimuth (deg)
     i.e. angle clockwise from North (+y)
     """
-    return (-np.degrees(np.arctan2(x, y))) % 360
+    return np.degrees(np.arctan2(x, y)) % 360
 
 
 def nearest_hour(date):
