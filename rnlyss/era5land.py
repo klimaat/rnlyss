@@ -41,6 +41,38 @@ class ERA5Land(ERA5):
             "full": "2m_temperature",
             "type": "hourly",
         },
+        # Dew point temperature @ 2m (K)
+        "d2m": {
+            "role": "tdps",
+            "scale": 1e-2,
+            "offset": 330,
+            "full": "2m_dewpoint_temperature",
+            "type": "hourly",
+        },
+        # Zonal wind (east-west) @ 10m (m/s)
+        "u10": {
+            "role": "uas",
+            "scale": 1e-2,
+            "offset": 0,
+            "full": "10m_u_component_of_wind",
+            "type": "hourly",
+        },
+        # Meridional wind (north-south) @ 10m (m/s)
+        "v10": {
+            "role": "vas",
+            "scale": 1e-2,
+            "offset": 0,
+            "full": "10m_v_component_of_wind",
+            "type": "hourly",
+        },
+        # Surface pressure (Pa)
+        "sp": {
+            "role": "ps",
+            "scale": 1,
+            "offset": 75000,
+            "full": "surface_pressure",
+            "type": "hourly",
+        },
         # Surface geopotential (m); convert from m2/s2 to m
         "z": {
             "role": "hgt",
