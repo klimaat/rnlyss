@@ -545,7 +545,8 @@ class Dataset(object):
                     t.append(slab.time())
 
             # Convert normalized components average to wind direction
-            wd = np.degrees(np.arctan2(-u, -v)) % 360
+            with np.errstate(invalid="ignore"):
+                wd = np.degrees(np.arctan2(-u, -v)) % 360
 
             x.append(np.transpose(ws))
             y.append(np.transpose(wd))
