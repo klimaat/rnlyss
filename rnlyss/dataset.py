@@ -384,10 +384,7 @@ class Dataset(object):
                 t += np.timedelta64(int(np.rint(offset)), "m")
 
             if self.isvector(dvar):
-                # Create column names
-                n = len(x[0].shape)
-                names = [role + "_" + c for _, c in zip(range(n), ["x", "y", "z"])]
-                return pd.DataFrame(index=t, data=np.concatenate(x), columns=names)
+                return pd.DataFrame(index=t, data=np.concatenate(x), columns=list(role))
             else:
                 return pd.Series(index=t, data=np.concatenate(x), name=role)
 
