@@ -1285,11 +1285,11 @@ def orbit(utc, method=None):
         method = method.upper()
         if method == "ASHRAE":
             func = orbit_ashrae
-        elif method in ["CFSR", "CFSv2"]:
+        elif method in ["CFSR", "CFSV2"]:
             func = orbit_cfsr
         elif method == "MERRA2":
             func = orbit_merra2
-        elif method in ["ERA5", "ERA5Land"]:
+        elif method in ["ERA5", "ERA5LAND"]:
             func = orbit_era5
         elif method in ["EPW", "ENERGYPLUS"]:
             func = orbit_energyplus
@@ -1547,11 +1547,11 @@ def total_solar_irradiance(utc, constant=None, method=None):
         method = method.upper()
         if method == "ASHRAE":
             func = total_solar_irradiance_ashrae
-        elif method in ["CFSR", "CFSv2"]:
+        elif method in ["CFSR", "CFSV2"]:
             func = total_solar_irradiance_cfsr
         elif method == "MERRA2":
             func = total_solar_irradiance_merra2
-        elif method in ["ERA5", "ERA5Land"]:
+        elif method in ["ERA5", "ERA5LAND"]:
             func = total_solar_irradiance_era5
         elif method in ["EPW", "ENERGYPLUS"]:
             func = total_solar_irradiance_ashrae
