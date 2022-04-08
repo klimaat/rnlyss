@@ -69,9 +69,6 @@ class Grid(object):
         # Find i, j
         i, j = self.xy2ij(x, y)
 
-        if self.periodic:
-            j %= self.shape[1]
-
         if limit:
             eps = np.finfo(i.dtype).eps
             i = np.clip(i, -0.5 + eps, self.shape[0] - 0.5 - eps)
@@ -79,6 +76,9 @@ class Grid(object):
 
         if snap:
             i, j = np.rint(i).astype(np.int), np.rint(j).astype(np.int)
+
+        if self.periodic:
+            j %= self.shape[1]
 
         return (
             np.asscalar(i) if np.isscalar(lat) else i,
@@ -292,12 +292,12 @@ def test():
     # Regular boring grid
     grid = Grid(shape=(181, 360), origin=(-90, -180), delta=(1, 1))
     A = grid.areas(r=1.0)
-    print(A.shape, np.sum(A)/(4*np.pi))
+    print(A.shape, np.sum(A) / (4 * np.pi))
 
     # MERRA-2
     grid = Grid(shape=(361, 576), origin=(-90, -180), delta=(1 / 2, 5 / 8))
     A = grid.areas(r=1.0)
-    print(A.shape, np.sum(A)/(4*np.pi))
+    print(A.shape, np.sum(A) / (4 * np.pi))
 
     # ERA5
     # NB. Data downloaded from Copernicus in netCDF4 format is 0.25°×0.25°
