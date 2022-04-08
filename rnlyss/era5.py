@@ -91,6 +91,7 @@ class ERA5(Dataset):
             "full": "surface_solar_radiation_downward_clear_sky",
         },
         # Shortwave (direct) downwelling at surface (J/m²); convert to (W/m²)
+        # NB. This is horizontal direct i.e. fdir = direct_normal × cos(zenith)
         "fdir": {
             "role": "rsdsd",
             "scale": 0.1,
