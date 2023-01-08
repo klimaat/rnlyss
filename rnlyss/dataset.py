@@ -491,7 +491,11 @@ class Dataset(object):
             if isinstance(dvars, tuple):
                 # e.g. MERRA, separate slabs for each component
                 with self[dvars[0], year] as slabx:
+                    if not slabx:
+                        continue
                     with self[dvars[1], year] as slaby:
+                        if not slaby:
+                            continue
                         for (i, j), wgt_ij in zip(inds, wgts):
                             uas_ij = slabx[i, j, ...]
                             vas_ij = slaby[i, j, ...]
@@ -518,6 +522,8 @@ class Dataset(object):
             else:
                 # e.g. CFSR, one vector slab
                 with self[dvars, year] as slab:
+                    if not slab:
+                        continue
                     for (i, j), wgt_ij in zip(inds, wgts):
                         uas_ij = slab[i, j, 0, ...]
                         vas_ij = slab[i, j, 1, ...]
