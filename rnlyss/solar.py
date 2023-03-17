@@ -1804,8 +1804,8 @@ def engerer(Kt, Ktc, z, h, **kwargs):
     Calculate diffuse fraction as a function of clearness index kt
     via the Engerer2 relation.
 
-    kt is clearness index (E_gh/E0)
-    ktc is clear sky clearness index (E_ghc/E0)
+    kt is clearness index (E_gh/E0_h)
+    ktc is clear sky clearness index (E_ghc/E0_h)
     z is cos(zenith), dimensionless
     h is hour angle, radians
     """
