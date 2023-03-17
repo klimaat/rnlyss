@@ -451,13 +451,13 @@ class MERRA2(Dataset):
                 "FORMAT": "bmM0Lw",
                 "BBOX": "-90,-180,90,180",
                 "SHORTNAME": shortname,
-                "SERVICE": "SUBSET_MERRA2",
+                "SERVICE": "L34RS_MERRA2",
                 "VERSION": "1.02",
                 "LAYERS": "",
                 "VARIABLES": "%s" % dvar.upper(),
             }
 
-            url = r"http://goldsmr4.gesdisc.eosdis.nasa.gov/"
+            url = r"https://goldsmr4.gesdisc.eosdis.nasa.gov/"
             url += r"daac-bin/OTF/HTTP_services.cgi?"
             url += urlencode(params)
 
