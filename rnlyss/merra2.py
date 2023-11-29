@@ -95,14 +95,14 @@ class MERRA2(Dataset):
         # Albedo (0 to 1)
         'ALBEDO': {'role': 'albedo', 'scale': 1e-4,
                    'collection': 'tavg1_2d_rad_Nx', 'hour0': 1},
-        # Aerosol Angstrom exponent (0 to 1)
-        'TOTANGSTR': {'role': 'alpha', 'scale': 1e-4,
+        # Aerosol Angstrom exponent (typ. <1)
+        'TOTANGSTR': {'role': 'alpha', 'scale': 1e-3,
                       'collection': 'tavg1_2d_aer_Nx', 'hour0': 1},
-        # Aerosol optical depth @ 550nm (0 to 1)
-        'TOTEXTTAU': {'role': 'aod550', 'scale': 1e-4,
+        # Aerosol optical depth @ 550nm (typ. <1)
+        'TOTEXTTAU': {'role': 'aod550', 'scale': 1e-3,
                       'collection': 'tavg1_2d_aer_Nx', 'hour0': 1},
-        # Aerosol scattering (0 to 1)
-        'TOTSCATAU': {'role': 'scatter', 'scale': 1e-4,
+        # Aerosol scattering (typ. <1)
+        'TOTSCATAU': {'role': 'scatter', 'scale': 1e-3,
                       'collection': 'tavg1_2d_aer_Nx', 'hour0': 1},
         #  Surface roughness (m); store log(z0)
         # 'Z0M': {'role': 'z0', 'scale': 1e-3, 'converter': lambda x: np.log(x),
