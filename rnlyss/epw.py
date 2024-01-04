@@ -10,7 +10,7 @@ import calendar
 import numpy as np
 import pandas as pd
 
-from rnlyss.psychro import calc_relative_humidity
+from rnlyss.humidity import calc_rh_from_db_and_dp
 from rnlyss.solar import perez
 from rnlyss.ground import calc_ground_temperatures
 
@@ -356,7 +356,7 @@ def write_epw(path, dsets, years, lat=0, lon=0, hgt=0, tz=0, **kwargs):
     df = blend_months(df)
 
     # Add RH (%) based on values
-    df["RH"] = 100 * calc_relative_humidity(df["DB"], df["DP"])
+    df["RH"] = calc_rh_from_db_and_dp(df["DB"], df["DP"])
 
     # Add illuminance values
     df["It"], df["Ib"], df["Id"], df["Lz"] = perez(

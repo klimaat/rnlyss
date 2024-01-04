@@ -13,8 +13,9 @@ from scipy.ndimage import map_coordinates
 
 from rnlyss.hyperslab import HyperSlab
 from rnlyss.grid import Grid
-from rnlyss.psychro import calc_vapor_pressure, calc_dew_point_temperature
 
+from rnlyss.psychro import calc_vapor_pressure, calc_dew_point_temperature
+from rnlyss.humidity import calc_dp_from_q_and_p
 
 # Register possible dataset sources
 DATASETS = ["CFSv2", "CFSR", "MERRA2", "ERA5", "ERA5Land"]
@@ -893,21 +894,16 @@ class Dataset(object):
                 # Scale height for Y is geometric average of Hw & Hp
                 Hy = (Hw * Hp) / (Hp - Hw)
             else:
+                # No scaling
                 Hy = None
 
-            Y = self(
+            q = self(
                 "huss", lat, lon, hgt=hgt, years=years, order=order, scale_height=Hy
             )
 
-            # Calculate vapor pressure (Pa) from specific humidity and pressure
-            pw = calc_vapor_pressure(Y, p=p)
+            # Calculate dew point temperature (C) from specific humidity and presure
+            dp = pd.Series(data=calc_dp_from_q_and_p(q, p), index=q.index, name="DP")
 
-            # Calculate dew point temperature (C) from vapor pressure
-            dp = pd.Series(
-                data=calc_dew_point_temperature(pw, exact=exact),
-                index=pw.index,
-                name="DP",
-            )
         else:
             dp.name = "DP"
             dp -= 273.15

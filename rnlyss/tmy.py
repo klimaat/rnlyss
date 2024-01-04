@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from rnlyss.psychro import calc_relative_humidity
+from rnlyss.humidity import calc_rh_from_db_and_dp
 
 _METHODS = {
     "ISO_15927": {"DB_Avg": 1, "RH_Avg": 1, "Et_Avg": 1},
@@ -157,7 +157,7 @@ def identify_tmy(
 
     # Add RH (%) if necessary
     if "RH" in quants:
-        df["RH"] = 100 * calc_relative_humidity(df["DB"], df["DP"])
+        df["RH"] = calc_rh_from_db_and_dp(df["DB"], df["DP"])
 
     # Loop over each quantity
     dist_ym = {}
@@ -217,7 +217,7 @@ def main():
         method="ISO_15927",
         full_output=True,
         years=range(2000, 2021),
-        **loc
+        **loc,
     )
     pd.set_option("display.width", 10000)
     for k, df in dist_ym.items():
