@@ -14,7 +14,6 @@ from scipy.ndimage import map_coordinates
 from rnlyss.hyperslab import HyperSlab
 from rnlyss.grid import Grid
 
-from rnlyss.psychro import calc_vapor_pressure, calc_dew_point_temperature
 from rnlyss.humidity import calc_dp_from_q_and_p
 
 # Register possible dataset sources
