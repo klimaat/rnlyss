@@ -71,6 +71,17 @@ def calc_dp_from_q_and_p(q, p):
     c = np.log(vp / 611.2)
     return 243.12 * c / (17.62 - c)
 
+def calc_fp_from_rh(rh, db):
+    """
+    Calculate frost-point (°C) from RH (%) and dry-bulb (°C)
+    Derived from Eq. (4.B.6) and (4.B.11)
+    """
+
+    # Vapor pressure (pressure is moot)
+    vp = rh / 100 * calc_sat_vp_water(db, p=None)
+    # Solve for frost-point
+    c = np.log(vp / 611.2)
+    return 272.62 * c / (22.46 - c)
 
 def calc_fp_from_q_and_p(q, p):
     """
