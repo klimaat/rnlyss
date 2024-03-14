@@ -104,7 +104,7 @@ class HyperSlab(object):
                 np.rint((converter(x) - self.offset) / self.scale).astype(np.int16),
             )
 
-    def to_float(self, i, dtype=np.float):
+    def to_float(self, i, dtype=float):
         """
         Convert to float; real representation
         """

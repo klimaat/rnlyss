@@ -75,7 +75,7 @@ class Grid(object):
             j = np.clip(j, -0.5 + eps, self.shape[1] - 0.5 - eps)
 
         if snap:
-            i, j = np.rint(i).astype(np.int), np.rint(j).astype(np.int)
+            i, j = np.rint(i).astype(int), np.rint(j).astype(int)
 
         if self.periodic:
             j %= self.shape[1]
