@@ -22,7 +22,6 @@ except ImportError:
 
 
 class MERRA2(Dataset):
-
     # fmt: off
     dvars = {
         # Dry bulb temperature @ 2m, 10m (K)
@@ -136,6 +135,20 @@ class MERRA2(Dataset):
             "frlandice", lat, lon, order=order
         )
 
+    def land_grid(self):
+        """
+        Return entire land mask grid
+
+        May need to be over-ridden by subclass e.g. MERRA-2
+        """
+        with self["FRLAND"] as slab:
+            # Grab entire array
+            frland = slab[:, :, 0]
+        with self["FRLANDICE"] as slab:
+            # Grab entire array
+            frlandice = slab[:, :, 0]
+        return frland + frlandice
+
     def stack(self, dvars=None, years=None, months=None, force=False, **kwargs):
         """
         Fill element HDF with available GRB data.
@@ -147,7 +160,6 @@ class MERRA2(Dataset):
         nc_path = self.get_data_path("nc4")
 
         for dvar in sorted(dvars):
-
             # Check dvar
             if dvar not in self:
                 print("%s not in dataset... skipping" % dvar)
@@ -161,15 +173,13 @@ class MERRA2(Dataset):
 
             # Special case: constant
             if self.isconstant(dvar):
-
                 with self[dvar] as slab:
-
                     if not slab:
                         slab.create(
                             shape=self.grid.shape,
                             year=self.years[0],
                             freq=0,
-                            **self.dvars[dvar]
+                            **self.dvars[dvar],
                         )
 
                     if slab.isfull(0) and not force:
@@ -194,7 +204,6 @@ class MERRA2(Dataset):
 
             # Loop over request years
             for year in self.iter_year(years):
-
                 if self.isscalar(dvar):
                     shape = self.grid.shape
 
@@ -202,7 +211,6 @@ class MERRA2(Dataset):
                     shape = self.grid.shape + (2,)
 
                 with self[dvar, year] as slab:
-
                     if slab:
                         print(dvar, "exists... updating")
                     else:
@@ -212,7 +220,6 @@ class MERRA2(Dataset):
                         )
 
                     for month in self.iter_month(year, months):
-
                         start_time = time.time()
 
                         # Insert point
@@ -284,7 +291,6 @@ class MERRA2(Dataset):
         session = requests.Session()
 
         def get_file(url, dst):
-
             # Ensure directory exists
             os.makedirs(os.path.dirname(dst), exist_ok=True)
 
@@ -326,7 +332,6 @@ class MERRA2(Dataset):
             return True
 
         def get_constants():
-
             # Need to get a single constant file collection
 
             constants = self.constants()
@@ -391,7 +396,6 @@ class MERRA2(Dataset):
         }
 
         def get_hourly_file(dvar, year, month, day):
-
             dst = self.get_nc4_filename(dvar, year, month, day)
 
             # Quick exit
@@ -507,7 +511,6 @@ class MERRA2(Dataset):
 
 
 def main():
-
     # Create MERRA-2 instance
     M = MERRA2()
 

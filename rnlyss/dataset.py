@@ -8,12 +8,12 @@ import numpy as np
 import pandas as pd
 import importlib
 import configparser
-
+from scipy.spatial import KDTree
 from scipy.ndimage import map_coordinates
 
 from rnlyss.hyperslab import HyperSlab
 from rnlyss.grid import Grid
-
+from rnlyss.sphere import to_cartesian
 from rnlyss.humidity import calc_dp_from_q_and_p
 
 # Register possible dataset sources
@@ -86,7 +86,6 @@ class Dataset(object):
     grid = Grid()
 
     def __init__(self, data_dir=None, **kwargs):
-
         # Set data_dir
         self.set_data_dir(data_dir)
 
@@ -94,6 +93,10 @@ class Dataset(object):
         self.now = datetime.datetime.now()
         if self.years[1] is None:
             self.years[1] = self.now.year
+
+        # For tree lookups
+        self.land_indices = None
+        self.land_tree = None
 
     def stack(self, **kwargs):
         raise NotImplementedError
@@ -117,7 +120,6 @@ class Dataset(object):
                 )
 
             else:
-
                 # Check for existence of a config file
                 home_dir = os.path.expanduser("~")
 
@@ -215,7 +217,6 @@ class Dataset(object):
         return self.maxmin(role=role, years=years, maxmin="max")
 
     def maxmin(self, role, years=None, maxmin="max"):
-
         s = []
 
         dvar = self.get_dvar(role)
@@ -223,11 +224,8 @@ class Dataset(object):
             return None
 
         for year in self.iter_year(years):
-
             if self.isconstant(dvar):
-
                 with self[dvar] as slab:
-
                     if not slab:
                         return None
 
@@ -240,9 +238,7 @@ class Dataset(object):
                     return np.squeeze(val)
 
             else:
-
                 with self[dvar, year] as slab:
-
                     if slab:
                         t = slab.time()
                         val = getattr(slab, maxmin)()
@@ -320,21 +316,18 @@ class Dataset(object):
                 hgts = [slab[i, j, 0] for i, j in inds]
 
         def extract(slab):
-
             if not slab:
                 return None
 
             val = None
 
             for (i, j), hgt_ij, wgt_ij in zip(inds, hgts, wgts):
-
                 val_ij = slab[i, j, ...]
 
                 if val_ij is None:
                     return None
 
                 if hgt is not None:
-
                     # Scale to hgt
                     if scale_height is not None:
                         val_ij *= np.exp((hgt_ij - hgt) / scale_height)
@@ -350,9 +343,7 @@ class Dataset(object):
             return val
 
         for year in self.iter_year(years):
-
             if self.isconstant(dvar):
-
                 with self[dvar] as slab:
                     val = extract(slab)
 
@@ -363,7 +354,6 @@ class Dataset(object):
                     return np.asscalar(val)
 
             else:
-
                 with self[dvar, year] as slab:
                     val = extract(slab)
 
@@ -376,7 +366,6 @@ class Dataset(object):
 
         # Convert to Pandas series
         if len(t):
-
             # Create time index
             t = np.concatenate(t)
 
@@ -390,12 +379,47 @@ class Dataset(object):
 
         return None
 
-    def snap(self, lat, lon):
+    def snap(self, lat, lon, land=False, max_dist=np.inf):
         """
         Given a requested (lat, lon) return the nearest grid (lat, lon)
+
+        If land=True, search for nearest land-mask >= 0.5
         """
+
+        # Snap to (i, j)
         i, j = self.grid(lat, lon, snap=True)
-        return self.grid[i, j]
+
+        # Don't care if land or not
+        if not land:
+            return self.grid[i, j]
+
+        if self.land_tree is None:
+            # Establish land mask
+            land_bool = self.land_grid().flatten() >= 0.5
+
+            # Full lat, lon matrices
+            lats, lons = np.meshgrid(
+                self.grid.lats(), self.grid.lons(), indexing="ij"
+            )
+
+            # Build tree of land locations
+            self.land_tree = KDTree(
+                to_cartesian(lats.flatten()[land_bool], lons.flatten()[land_bool])
+            )
+
+            # Store indices of these locations
+            self.land_indices = np.arange(np.prod(self.grid.shape))[land_bool]
+
+        # Query our location
+        dist, ind = self.land_tree.query(to_cartesian(lat, lon), k=1, p=2)
+
+        # Check we're within our query distance; else return NaNs
+        if dist > max_dist:
+            return np.nan, np.nan
+
+        # Magic unravel of our 1D indices
+        i, j = np.unravel_index(self.land_indices[ind], self.grid.shape)
+        return self.grid[np.squeeze(i), np.squeeze(j)]
 
     def hgt(self, lat, lon, order=0):
         """
@@ -413,7 +437,7 @@ class Dataset(object):
         order=0: snap to nearest grid point horizontally.
         order=1: perform bi-linear interpolation
 
-        Make need to be over-ridden by subclass
+        May need to be over-ridden by subclass e.g. MERRA-2
         """
         return self("land", lat, lon, order=order)
 
@@ -428,7 +452,6 @@ class Dataset(object):
         """
 
         with self[self.get_dvar("hgt")] as slab:
-
             # Grab entire array
             hgt = slab[:, :, 0]
 
@@ -450,6 +473,24 @@ class Dataset(object):
                 raise ValueError("Order must be 0=nearest or 1=bi-linear")
 
         return np.squeeze(hgts)
+
+    def hgt_grid(self):
+        """
+        Return entire height grid
+        """
+        with self[self.get_dvar("hgt")] as slab:
+            # Grab entire array
+            return slab[:, :, 0]
+
+    def land_grid(self):
+        """
+        Return entire land mask grid
+
+        May need to be over-ridden by subclass e.g. MERRA-2
+        """
+        with self[self.get_dvar("land")] as slab:
+            # Grab entire array
+            return slab[:, :, 0]
 
     def wind(self, lat, lon, hgt=None, order=0, years=None):
         """
@@ -485,7 +526,6 @@ class Dataset(object):
         t, x, y = [], [], []
 
         for year in self.iter_year(years):
-
             wd, ws, u, v = None, None, None, None
 
             if isinstance(dvars, tuple):
@@ -767,7 +807,6 @@ class Dataset(object):
         return pt / 1000.0
 
     def clear_sky_index(self, lat, lon, years=None, order=0, alt_lim=5):
-
         # Extract downwelling clear-sky at surface
         Ec = self("rsdsc", lat, lon, years=years, order=order)
         if Ec is None:
@@ -951,7 +990,6 @@ class Dataset(object):
         return inv
 
     def iter_year(self, years=None):
-
         available_years = list(range(self.years[0], self.years[1] + 1))
 
         if years is None:
@@ -965,7 +1003,6 @@ class Dataset(object):
             yield year
 
     def iter_month(self, year, months=None):
-
         available_months = range(1, 12 + 1)
 
         if months is None:
@@ -1009,7 +1046,6 @@ class Dataset(object):
         stacked = {}
 
         for dvar in dvars:
-
             if self.isconstant(dvar):
                 continue
 
@@ -1017,7 +1053,6 @@ class Dataset(object):
             data = []
 
             for year in self.iter_year(years):
-
                 with self[dvar, year] as slab:
                     if slab:
                         index.append(year)
