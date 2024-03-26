@@ -17,7 +17,7 @@ from rnlyss.sphere import to_cartesian
 from rnlyss.humidity import calc_dp_from_q_and_p
 
 # Register possible dataset sources
-DATASETS = ["CFSv2", "CFSR", "MERRA2", "ERA5", "ERA5Land"]
+DATASETS = ["CFSv2", "CFSR", "MERRA2", "ERA5", "ERA5Land", "NARR"]
 
 
 def import_module(dset, root="rnlyss"):
