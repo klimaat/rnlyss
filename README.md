@@ -73,7 +73,7 @@ The Copernicus CDS API for ERA5 requires a file called `$HOME/.cdsapirc` with:
 {
     "url"   : "https://apps.ecmwf.int/v1",
     "key"   : "a1b2c3d4a1b2c3d4a1b2c3d4a1b2c3d4",
-    "email" : "michael.j.roth@gmail.com"
+    "email" : "your.email@gmail.com"
 }
 ```
 
