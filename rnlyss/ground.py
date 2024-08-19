@@ -23,7 +23,7 @@ def calc_ground_temperatures(
     """
 
     if leap_year:
-        year_hours = 8764
+        year_hours = 8784
         month_day_15 = np.array(
             [np.nan, 15, 47, 75, 96, 136, 167, 197, 228, 259, 289, 320, 350]
         )
