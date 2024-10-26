@@ -16,7 +16,7 @@ from rnlyss.util import syslog_elapsed_time
 try:
     import netCDF4
 except ImportError:
-    raise NotImplementedError("cdsapi req'd to read some ERA5Land datasets")
+    raise NotImplementedError("netcdf4 req'd to read some ERA5Land datasets")
 
 try:
     import cdsapi
