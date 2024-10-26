@@ -42,7 +42,7 @@ def calc_sat_vap(db, p=None):
     Calculate saturation vapor pressure e_w/i (Pa) given a dry-bulb db (°C)
     Branches over ice or water based on db
     """
-    return np.where(db < 0, calc_sat_vap_ice(db, p=p), calc_sat_vp_water(db, p=p))
+    return np.where(db < 0, calc_sat_vp_ice(db, p=p), calc_sat_vp_water(db, p=p))
 
 
 def calc_dp_from_rh(rh, db):
