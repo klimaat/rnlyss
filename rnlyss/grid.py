@@ -26,9 +26,8 @@ class Grid(object):
         periodic=True,
         pole_to_pole=True,
         r=_EARTH_RADIUS,
-        **kwargs
+        **kwargs,
     ):
-
         self.shape = shape
         self.origin = origin
         self.delta = delta
@@ -54,8 +53,8 @@ class Grid(object):
         lat, lon = self.xy2ll(x, y)
 
         return (
-            np.asscalar(lat) if np.isscalar(args[0]) else lat,
-            np.asscalar(lon) if np.isscalar(args[1]) else lon,
+            lat.item() if np.isscalar(args[0]) else lat,
+            lon.item() if np.isscalar(args[1]) else lon,
         )
 
     def __call__(self, lat, lon, snap=False, limit=False):
@@ -210,7 +209,7 @@ class Grid(object):
             * 2
             * np.cos(np.radians(latc))
             * np.sin(np.radians(dlat) / 2)
-            * r ** 2
+            * r**2
         )
 
         # Copy in longitude dir'n
@@ -229,14 +228,13 @@ def gaussian_latitudes(n):
     """
     Calculate latitudes of Gaussian grid of n values.
     """
-    from scipy.special.orthogonal import p_roots
+    from scipy.special import roots_legendre
 
-    return np.degrees(np.arcsin(np.real(p_roots(n)[0])))
+    return np.degrees(np.arcsin(roots_legendre(n)[0]))
 
 
 class GaussianGrid(Grid):
     def __init__(self, shape, origin, delta, **kwargs):
-
         super(GaussianGrid, self).__init__(
             shape, origin, delta, periodic=True, **kwargs
         )
@@ -288,7 +286,6 @@ class GaussianGrid(Grid):
 
 
 def test():
-
     # Regular boring grid
     grid = Grid(shape=(181, 360), origin=(-90, -180), delta=(1, 1))
     A = grid.areas(r=1.0)
