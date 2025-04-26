@@ -5,7 +5,7 @@ import numpy as np
 
 """
 Formulae for the computation of measures of humidity
-from WMO No.8 v1, Annex 4.B, 2018, pg.188
+Ref: WMO No.8 v1, Annex 4.B, 2018, pg.188
 "Guide to Instruments and Methods of Observations"
 """
 
@@ -67,9 +67,10 @@ def calc_dp_from_q_and_p(q, p):
     r = q / (1.0 - q)
     # In-situ vapour pressure = mole fraction × pressure from Eq. (4.A.6)
     vp = r / (0.62198 + r) * p
-    # Solve for dew-point
-    c = np.log(vp / 611.2)
+    # Eq. (4.B.6)
+    c = np.log(vp / (611.2 * calc_p_factor(p)))
     return 243.12 * c / (17.62 - c)
+
 
 def calc_fp_from_rh(rh, db):
     """
@@ -83,6 +84,7 @@ def calc_fp_from_rh(rh, db):
     c = np.log(vp / 611.2)
     return 272.62 * c / (22.46 - c)
 
+
 def calc_fp_from_q_and_p(q, p):
     """
     Calculate frost-point (°C) from specific humidity (-) and pressure (Pa)
@@ -92,8 +94,8 @@ def calc_fp_from_q_and_p(q, p):
     r = q / (1.0 - q)
     # In-situ vapour pressure = mole fraction × pressure from Eq. (4.A.6)
     vp = r / (0.62198 + r) * p
-    # Solve for frost-point
-    c = np.log(vp / 611.2)
+    # Eq. (4.B.7)
+    c = np.log(vp / (611.2 * calc_p_factor(p)))
     return 272.62 * c / (22.46 - c)
 
 
