@@ -254,8 +254,12 @@ class ERA5(Dataset):
                         with netCDF4.Dataset(path) as nc:
                             # Check for ERA5T
                             if "expver" in nc.variables:
-                                print(year, month, "expver... skipping")
-                                continue
+                                # Expver is a string "0001" for ERA5
+                                # or "0005" for ERA5T
+                                expver = nc.variables["expver"][:]
+                                if not np.all(expver == "0001"):
+                                    print(year, month, "expver... skipping")
+                                    continue
 
                             # Check that month isn't truncated
                             if nc.variables[dvar].shape[0] != nh:
