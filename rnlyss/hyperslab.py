@@ -176,7 +176,7 @@ class HyperSlab(object):
 
         # Create a boolean dataset initialized to False to store
         # whether given time slice has been filled
-        self.hdf.create_dataset("full", shape=(nt,), dtype=np.bool, fillvalue=False)
+        self.hdf.create_dataset("full", shape=(nt,), dtype=bool, fillvalue=False)
 
         # Create a int16 dataset initialized to missing to store
         # the minimum value of a given time slice
