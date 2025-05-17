@@ -2,7 +2,7 @@
 
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 import numpy as np
 import calendar
 
@@ -22,7 +22,6 @@ except ImportError:
 
 
 class ERA5(Dataset):
-
     # fmt: off
     dvars = {
         # Dry bulb temperature @ 2m (K)
@@ -160,7 +159,6 @@ class ERA5(Dataset):
             dvars = list(self.dvars.keys())
 
         for dvar in sorted(dvars):
-
             # Check dvar
             if dvar not in self:
                 print("%s not in dataset... skipping" % dvar)
@@ -178,15 +176,13 @@ class ERA5(Dataset):
 
             # Special case: constant
             if self.isconstant(dvar):
-
                 with self[dvar] as slab:
-
                     if not slab:
                         slab.create(
                             shape=self.grid.shape,
                             year=self.years[0],
                             freq=0,
-                            **self.dvars[dvar]
+                            **self.dvars[dvar],
                         )
 
                     if slab.isfull(0) and not force:
@@ -210,7 +206,6 @@ class ERA5(Dataset):
 
             # Loop over request years
             for year in self.iter_year(years):
-
                 if self.isscalar(dvar):
                     shape = self.grid.shape
 
@@ -218,7 +213,6 @@ class ERA5(Dataset):
                     shape = self.grid.shape + (2,)
 
                 with self[dvar, year] as slab:
-
                     if slab:
                         print(dvar, "exists... updating")
                     else:
@@ -228,7 +222,6 @@ class ERA5(Dataset):
                         )
 
                     for month in self.iter_month(year, months):
-
                         start_time = time.time()
 
                         # Insert point
@@ -315,7 +308,7 @@ class ERA5(Dataset):
             """
             Months between now and (year, month)
             """
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             then = datetime(year, month, 1)
             return (now.year - then.year) * 12 + (now.month - then.month)
 
@@ -360,6 +353,7 @@ class ERA5(Dataset):
                 {
                     "product_type": "reanalysis",
                     "format": "netcdf",
+                    "data_format": "unarchived",
                     "variable": full_name,
                     "year": "%04d" % year,
                     "month": "%02d" % month,
@@ -419,7 +413,6 @@ class ERA5(Dataset):
 
 
 def main():
-
     # Create MERRA-2 instance
     E = ERA5()
 

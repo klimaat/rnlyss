@@ -3,7 +3,7 @@
 
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 import numpy as np
 import calendar
 import requests
@@ -30,7 +30,6 @@ except ImportError:
 
 
 class ERA5Land(ERA5):
-
     # fmt: off
     dvars = {
         # Dry bulb temperature @ 2m (K)
@@ -127,7 +126,7 @@ class ERA5Land(ERA5):
             """
             Months between now and (year, month)
             """
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             then = datetime(year, month, 1)
             return (now.year - then.year) * 12 + (now.month - then.month)
 
@@ -180,12 +179,13 @@ class ERA5Land(ERA5):
                 return (
                     "reanalysis-era5-land",
                     {
-                        "format": "grib",
                         "variable": full_name,
                         "year": "%04d" % year,
                         "month": "%02d" % month,
                         "day": days,
                         "time": hours,
+                        "format": "grib",
+                        "download_format": "unarchived",
                     },
                     target_path,
                 )
@@ -209,7 +209,6 @@ class ERA5Land(ERA5):
                 raise
 
         def get_file(url, dst):
-
             # Ensure directory exists
             os.makedirs(os.path.dirname(dst), exist_ok=True)
 
@@ -300,7 +299,6 @@ class ERA5Land(ERA5):
             dvars = list(self.dvars.keys())
 
         for dvar in sorted(dvars):
-
             # Check dvar
             if dvar not in self:
                 print("%s not in dataset... skipping" % dvar)
@@ -318,9 +316,7 @@ class ERA5Land(ERA5):
 
             # Special case: constant
             if self.isconstant(dvar):
-
                 with self[dvar] as slab:
-
                     if not slab:
                         slab.create(
                             shape=self.grid.shape,
@@ -351,7 +347,6 @@ class ERA5Land(ERA5):
 
             # Loop over request years
             for year in self.iter_year(years):
-
                 if self.dvars[dvar].get("type", "hourly") != "hourly":
                     print(dvar, "is not hourly... skipping")
                     continue
@@ -363,7 +358,6 @@ class ERA5Land(ERA5):
                     shape = self.grid.shape + (2,)
 
                 with self[dvar, year] as slab:
-
                     if slab:
                         print(dvar, "exists... updating")
                     else:
@@ -373,7 +367,6 @@ class ERA5Land(ERA5):
                         )
 
                     for month in self.iter_month(year, months):
-
                         start_time = time.time()
 
                         # Insert point
