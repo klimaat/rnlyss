@@ -312,13 +312,18 @@ class MERRA2(Dataset):
 
                 return False
 
-            content_length = int(request.headers["Content-Length"])
-
-            print(
-                "%s available... " % dst,
-                "downloading %d bytes" % content_length,
-                flush=True,
-            )
+            try:
+                content_length = int(request.headers["Content-Length"])
+                print(
+                    "%s available... " % dst,
+                    "downloading %d bytes" % content_length,
+                    flush=True,
+                )
+            except KeyError:
+                print(
+                    f"{dst} available... downloading",
+                    flush=True,
+                )
 
             try:
                 # Stream to file
