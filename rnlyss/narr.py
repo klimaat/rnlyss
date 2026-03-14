@@ -167,7 +167,11 @@ class LambertGrid(Grid):
 
 
 class NARR(Dataset):
+    # NARR dataset variables;
+    # NB. "label" refers to the name of variable stored within the netcdf
+    #     files. e.g. files named "air.2m." have "air" as the stored variable
     dvars = {
+        # Dry bulb temperature @ 2m (K)
         "air.2m": {
             "scale": 1e-2,
             "offset": 330,
@@ -175,6 +179,7 @@ class NARR(Dataset):
             "role": "tas",
             "label": "air",
         },
+        # Dew point temperature @ 2m (K)
         "dpt.2m": {
             "scale": 1e-2,
             "offset": 330,
@@ -182,15 +187,11 @@ class NARR(Dataset):
             "role": "tdps",
             "label": "dpt",
         },
-        # "shum.2m": {
-        #     "scale": 1e-6,
-        #     "offset": 0.03,
-        #     "unit": "kg/kg",
-        #     "role": "huss",
-        #     "label": "shum",
-        # },
+        # Zonal wind (east-west) @ 10m (m/s)
         "uwnd.10m": {"scale": 1e-2, "units": "m/s", "role": "uas", "label": "uwnd"},
+        # Meridional wind (north-south) @ 2m (m/s)
         "vwnd.10m": {"scale": 1e-2, "units": "m/s", "role": "vas", "label": "vwnd"},
+        # Surface pressure (Pa)
         "pres.sfc": {
             "scale": 1,
             "offset": 75000,
@@ -198,16 +199,21 @@ class NARR(Dataset):
             "role": "ps",
             "label": "pres",
         },
+        # Surface elevation/height (m)
         "hgt.sfc": {"role": "hgt", "constant": True, "label": "hgt"},
         "land": {"role": "land", "constant": True, "label": "land"},
+        # Cloud fraction (0 to 1); convert from %
+        "tcdc": {
+            "scale": 1e-4,
+            "units": "1",
+            "role": "clt",
+            "label": "tcdc",
+            "converter": lambda x: x / 100.0,
+        },
+        # Shortwave downwelling @ surface (W/m²)
         "dswrf": {"scale": 0.1, "units": "W/m2", "role": "rsds", "label": "dswrf"},
+        # Longwave downwelling @ surface (W/m²)
         "dlwrf": {"scale": 0.1, "units": "W/m2", "role": "rlds", "label": "dlwrf"},
-        # "apcp": {
-        #     "scale": 1 / 36000,
-        #     "units": "kg/m2/s",
-        #     "role": "pr",
-        #     "collection": "acpcp",
-        # },
     }
 
     # Time starts 1979; 3-hourly; 00:00
@@ -307,7 +313,7 @@ class NARR(Dataset):
 
     def stack(self, dvars=None, years=None, months=None, force=False, **kwargs):
         """
-        Fill element HDF with available CERES data
+        Fill element HDF with available NARR data
         """
         if dvars is None:
             dvars = list(self.dvars.keys())
