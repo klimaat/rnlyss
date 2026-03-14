@@ -200,8 +200,8 @@ class NARR(Dataset):
         },
         "hgt.sfc": {"role": "hgt", "constant": True, "label": "hgt"},
         "land": {"role": "land", "constant": True, "label": "land"},
-        "dswrf": {"scale": 0.1, "units": "W/mn2", "role": "rsds", "label": "dswrf"},
-        # "dlwrf": {"scale": 0.1, "units": "W/m2", "role": "rlds", "label": "dlwrf"},
+        "dswrf": {"scale": 0.1, "units": "W/m2", "role": "rsds", "label": "dswrf"},
+        "dlwrf": {"scale": 0.1, "units": "W/m2", "role": "rlds", "label": "dlwrf"},
         # "apcp": {
         #     "scale": 1 / 36000,
         #     "units": "kg/m2/s",
