@@ -32,19 +32,21 @@ class MERRA2(Dataset):
         # Surface temperature (K)
         'TS': {'role': 'ts', 'scale': 1e-2, 'offset': 330,
                'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
-        # Specific humidity @ 2m, 10m (kg/kg)
+        # Specific humidity @ 2m (kg/kg)
         'QV2M': {'role': 'huss', 'scale': 1e-6, 'offset': 0.03,
                  'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
         # 'QV10M': {'role': 'huss10', 'scale': 1e-6, 'offset': 0.03,
         #          'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
-        # Zonal wind (east-west) @ 2m, 10m (m/s)
+        # Zonal wind (east-west) @ 2m (m/s)
         # 'U2M': {'role': 'uas2', 'scale': 1e-2, 'offset': 0,
         #          'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
+        # Zonal wind (east-west) @ 10m (m/s)
         'U10M': {'role': 'uas', 'scale': 1e-2, 'offset': 0,
                  'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
-        # Meridional wind (north-south) @ 10m (m/s)
+        # Meridional wind (north-south) @ 2m (m/s)
         # 'V2M': {'role': 'vas2', 'scale': 1e-2, 'offset': 0,
         #          'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
+        # Meridional wind (north-south) @ 10m (m/s)
         'V10M': {'role': 'vas', 'scale': 1e-2, 'offset': 0,
                  'collection': 'inst1_2d_asm_Nx', 'hour0': 0},
         # Surface pressure (Pa)
