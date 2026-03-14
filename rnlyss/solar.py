@@ -88,7 +88,7 @@ def delta_time(utc, method="NASA"):
         dy = y - yn
         s = np.zeros_like(y)
         for k in range(len(an)):
-            s += an[k] * dy ** k
+            s += an[k] * dy**k
         return s
 
     if method == "SG2":
@@ -233,14 +233,14 @@ def orbit_energyplus(utc):
         + 0.0657911 * sinD
         - 0.392779 * cosD
         + 0.00064440 * (sinD * cosD * 2.0)
-        - 0.00618495 * (cosD ** 2 - sinD ** 2)
-        - 0.00010101 * (sinD * (cosD ** 2 - sinD ** 2) + cosD * (sinD * cosD * 2.0))
-        - 0.00007951 * (cosD * (cosD ** 2 - sinD ** 2) - sinD * (sinD * cosD * 2.0))
-        - 0.00011691 * (2.0 * (sinD * cosD * 2.0) * (cosD ** 2 - sinD ** 2))
-        + 0.00002096 * ((cosD ** 2 - sinD ** 2) ** 2 - (sinD * cosD * 2.0) ** 2)
+        - 0.00618495 * (cosD**2 - sinD**2)
+        - 0.00010101 * (sinD * (cosD**2 - sinD**2) + cosD * (sinD * cosD * 2.0))
+        - 0.00007951 * (cosD * (cosD**2 - sinD**2) - sinD * (sinD * cosD * 2.0))
+        - 0.00011691 * (2.0 * (sinD * cosD * 2.0) * (cosD**2 - sinD**2))
+        + 0.00002096 * ((cosD**2 - sinD**2) ** 2 - (sinD * cosD * 2.0) ** 2)
     )
 
-    cosDec = np.sqrt(1 - sinDec ** 2)
+    cosDec = np.sqrt(1 - sinDec**2)
 
     # Equation of time (hours)
 
@@ -249,11 +249,11 @@ def orbit_energyplus(utc):
         - 0.122649 * sinD
         + 0.00762856 * cosD
         - 0.156308 * (sinD * cosD * 2.0)
-        - 0.0530028 * (cosD ** 2 - sinD ** 2)
-        - 0.00388702 * (sinD * (cosD ** 2 - sinD ** 2) + cosD * (sinD * cosD * 2.0))
-        - 0.00123978 * (cosD * (cosD ** 2 - sinD ** 2) - sinD * (sinD * cosD * 2.0))
-        - 0.00270502 * (2.0 * (sinD * cosD * 2.0) * (cosD ** 2 - sinD ** 2))
-        - 0.00167992 * ((cosD ** 2 - sinD ** 2) ** 2 - (sinD * cosD * 2.0) ** 2)
+        - 0.0530028 * (cosD**2 - sinD**2)
+        - 0.00388702 * (sinD * (cosD**2 - sinD**2) + cosD * (sinD * cosD * 2.0))
+        - 0.00123978 * (cosD * (cosD**2 - sinD**2) - sinD * (sinD * cosD * 2.0))
+        - 0.00270502 * (2.0 * (sinD * cosD * 2.0) * (cosD**2 - sinD**2))
+        - 0.00167992 * ((cosD**2 - sinD**2) ** 2 - (sinD * cosD * 2.0) ** 2)
     )
 
     # Convert to radians
@@ -371,7 +371,7 @@ def orbit_cfsr(utc):
     slag = sun - alp - 0.03255
 
     # Solar constant correction factor (inversely with radius squared)
-    solFactor = 1 / (r1 ** 2)
+    solFactor = 1 / (r1**2)
 
     return sdec, cdec, slag, solFactor
 
@@ -455,7 +455,7 @@ def orbit_noaa(utc):
     eqnOfTime *= np.pi / (60 * 12)
 
     # Solar constant correction factor (inversely with radius squared)
-    solFactor = 1 / (rad ** 2)
+    solFactor = 1 / (rad**2)
 
     return sinDec, cosDec, eqnOfTime, solFactor
 
@@ -470,14 +470,13 @@ def orbit_merra2(utc):
     days_per_cycle = 1461
 
     if orbit_merra2.orbit is None:
-
         # Constants from MAPL_Generic.F90
         ecc = 0.0167
         obliquity = np.radians(23.45)
         perihelion = np.radians(102.0)
         equinox = 80
 
-        omg = (2.0 * np.pi / yearlen) / np.sqrt(1 - ecc ** 2) ** 3
+        omg = (2.0 * np.pi / yearlen) / np.sqrt(1 - ecc**2) ** 3
         sob = np.sin(obliquity)
 
         # TH: Orbit anomaly
@@ -496,8 +495,8 @@ def orbit_merra2(utc):
 
         def update_orbit(th):
             zs = np.sin(th) * sob
-            zc = np.sqrt(1.0 - zs ** 2)
-            pp = ((1.0 - ecc * np.cos(th - perihelion)) / (1.0 - ecc ** 2)) ** 2
+            zc = np.sqrt(1.0 - zs**2)
+            pp = ((1.0 - ecc * np.cos(th - perihelion)) / (1.0 - ecc**2)) ** 2
             orbit[kp] = th, zs, zc, pp
 
         # Starting point
@@ -519,7 +518,6 @@ def orbit_merra2(utc):
         orbit_merra2.orbit = orbit
 
     else:
-
         orbit = orbit_merra2.orbit
 
     # Map into orbit
@@ -589,7 +587,7 @@ def orbit_era5(utc):
 
     RDS = np.arcsin(np.sin(REPSM) * np.sin(RLLLS))
     sinDec = np.sin(RDS)
-    cosDec = np.sqrt(1 - sinDec ** 2)
+    cosDec = np.sqrt(1 - sinDec**2)
 
     # Equation of time
     RET = (
@@ -725,7 +723,7 @@ def orbit_sg2(utc):
     cos_epsilon = np.cos(epsilon)
     sin_theta_a = np.sin(theta_a)
     sinDec = sin_theta_a * np.sin(epsilon)
-    cosDec = np.sqrt(1 - sinDec ** 2)
+    cosDec = np.sqrt(1 - sinDec**2)
 
     # Right ascension
     r_alpha_g = np.arctan2(sin_theta_a * cos_epsilon, np.cos(theta_a))
@@ -767,7 +765,7 @@ def orbit_spa(utc):
             for y in x:
                 # y = [A, B, C]
                 sy += y[0] * np.cos(y[1] + y[2] * jme)
-            sx += sy * jme ** i
+            sx += sy * jme**i
         return sx / 1e8
 
     # Earth heliocentric longitude
@@ -1213,7 +1211,7 @@ def orbit_spa(utc):
     sinDec = np.sin(beta) * np.cos(epsilon) + np.cos(beta) * np.sin(epsilon) * np.sin(
         lambda_
     )
-    cosDec = np.sqrt(1 - sinDec ** 2)
+    cosDec = np.sqrt(1 - sinDec**2)
 
     # Sun mean longitude
     M = (1 / 2000000) * np.ones_like(jme)
@@ -1259,7 +1257,7 @@ def orbit_aa(utc):
 
     # Declination (radians)
     sinDec = np.sin(epsilon) * np.sin(lambda_)
-    cosDec = np.sqrt(1 - sinDec ** 2)
+    cosDec = np.sqrt(1 - sinDec**2)
 
     # Earth-sun radius (au)
     R = 1.00014 - 0.01671 * np.cos(g) - 0.00014 * np.cos(2 * g)
@@ -1274,7 +1272,6 @@ def orbit_aa(utc):
 
 
 def orbit(utc, method=None):
-
     if method is None:
         method = "ASHRAE"
 
@@ -1455,7 +1452,7 @@ def total_solar_irradiance_merra2(utc):
 
 def total_solar_irradiance_ceres(utc):
     """
-    Calculate MERRA-2 total solar irradiance (W/m²) based on year and month
+    Return CERES total solar irradiance (W/m²) based on year and month
     """
 
     year, month, _ = split_date(utc)
@@ -1507,10 +1504,19 @@ def total_solar_irradiance_ceres(utc):
         [1360.6664, 1360.6565, 1360.6744, 1360.6801, 1360.7391, 1360.7473,
          1360.7353, 1360.8115, 1360.7637, 1360.7909, 1360.7609, 1360.9386],
         [1360.9440, 1360.8790, 1360.9140, 1360.8687, 1360.8783, 1360.9566,
-         1361.0599, 1361.0228, 1360.9877, 1361.0305, np.nan, np.nan],
+         1361.0599, 1361.0228, 1360.9877, 1361.0305, 1361.0973, 1361.0851],
+        [1361.1328, 1361.3182, 1361.2584, 1361.3907, 1361.5073, 1361.6008,
+         1361.4508, 1361.4289, 1361.5984, 1361.6861, 1361.6241, 1361.3529],
+        [1361.5805, 1361.7680, 1361.9842, 1361.9289, 1361.4919, 1361.8323,
+         1361.4346, 1361.8999, 1361.9837, 1362.2538, 1362.0041, 1361.9045],
+        [1361.9815, 1361.6037, 1361.8548, 1361.9296, 1361.6021, 1361.7722,
+         1361.9615, 1361.4949, 1362.4502, 1361.7398, 1361.8830, 1361.9918],
+        [1361.9691, 1361.8983, 1362.2245, 1361.9614, 1361.5599, 1361.7041,
+         1361.8197, 1361.7210, np.nan, np.nan, np.nan, np.nan],
         [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan,
          np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
     ])
+
     # fmt: on
     n = TSI.shape[0]
 
@@ -1601,7 +1607,7 @@ def position(lat, lon, utc, method="ASHRAE"):
     """
 
     # Calculate solar coefficients
-    sinDec, cosDec, eqnOfTime, solFactor = orbit(utc, method=method)
+    sinDec, cosDec, eqnOfTime, _ = orbit(utc, method=method)
 
     # Calculate hour angle
     H = hour_angle(lon, utc, eqnOfTime)
@@ -1636,7 +1642,7 @@ def clear_sky_irradiance(z, tb, td, E0):
     ad = D1 + D2 * tb + D3 * td + D4 * tb * td
 
     # Beam and diffuse irradiance
-    return E0 * np.exp(-tb * m ** ab), E0 * np.exp(-td * m ** ad)
+    return E0 * np.exp(-tb * m**ab), E0 * np.exp(-td * m**ad)
 
 
 def elevation(lat, lon, utc, method="ASHRAE", constant=None, interval=None, h=None):
@@ -1765,7 +1771,7 @@ def erbs(Kt, **kwargs):
     via Erbs relation
     """
     Kt = np.asarray(Kt)
-    Kd = 0.9511 - 0.1604 * Kt + 4.388 * Kt ** 2 - 16.638 * Kt ** 3 + 12.336 * Kt ** 4
+    Kd = 0.9511 - 0.1604 * Kt + 4.388 * Kt**2 - 16.638 * Kt**3 + 12.336 * Kt**4
     np.copyto(Kd, 1.0 - 0.09 * Kt, where=Kt <= 0.22)
     np.copyto(Kd, 0.165, where=Kt > 0.80)
     return Kd
@@ -1793,7 +1799,7 @@ def ruiz_arias(Kt, z, **kwargs):
     return np.clip(
         a[0]
         - a[1]
-        * np.exp(-np.exp(a[2] + a[3] * Kt + a[4] * Kt ** 2 + a[5] * m + a[6] * m ** 2)),
+        * np.exp(-np.exp(a[2] + a[3] * Kt + a[4] * Kt**2 + a[5] * m + a[6] * m**2)),
         0,
         1,
     )
@@ -1914,8 +1920,8 @@ def fit_taus(zi, Kti, iter_max=42, eps_max=1e-6, plot=False, quiet=False):
         ab = B1 + B2 * tb + B3 * td + B4 * tb * td
         ad = D1 + D2 * tb + D3 * td + D4 * tb * td
 
-        mab = mi ** ab
-        mad = mi ** ad
+        mab = mi**ab
+        mad = mi**ad
 
         Kb = np.exp(-tb * mab)
         Kd = np.exp(-td * mad) / zi
@@ -1939,18 +1945,17 @@ def fit_taus(zi, Kti, iter_max=42, eps_max=1e-6, plot=False, quiet=False):
     tauds = [td]
 
     for i in range(iter_max):
-
         # Calculate current Kt and its gradient
         Kt, dKt_dtb, dKt_dtd = calc(tb, td)
 
         # Residuals
         dKt = Kti - Kt
-        R = np.sum(dKt ** 2)
+        R = np.sum(dKt**2)
 
         # Form A, [J]^T[J]
-        Abb = (1 + damping) * np.sum(dKt_dtb ** 2)
+        Abb = (1 + damping) * np.sum(dKt_dtb**2)
         Abd = np.sum(dKt_dtb * dKt_dtd)
-        Add = (1 + damping) * np.sum(dKt_dtd ** 2)
+        Add = (1 + damping) * np.sum(dKt_dtd**2)
 
         # Form forcing vector [J]^[dKt]
         Bb = np.sum(dKt_dtb * dKt)
@@ -1958,7 +1963,7 @@ def fit_taus(zi, Kti, iter_max=42, eps_max=1e-6, plot=False, quiet=False):
 
         # Solve A*t = B by Kramer's rule, Giddy-up
         try:
-            detA = Abb * Add - Abd ** 2
+            detA = Abb * Add - Abd**2
             dtb = (Bb * Add - Bd * Abd) / detA
             dtd = (Abb * Bd - Abd * Bb) / detA
         except OverflowError:
@@ -2033,7 +2038,6 @@ def fit_taus(zi, Kti, iter_max=42, eps_max=1e-6, plot=False, quiet=False):
 
 
 def fit_monthly_taus(z, Kt, lat=None, lon=None, noon_flux=False, **kwargs):
-
     # Loop over months
     months = list(range(1, 13))
 
@@ -2054,7 +2058,6 @@ def fit_monthly_taus(z, Kt, lat=None, lon=None, noon_flux=False, **kwargs):
         clear_sky["taud"].append(taud)
 
         if noon_flux:
-
             if np.isnan(taub) or np.isnan(taud):
                 clear_sky["Ebnoon"].append(np.nan)
                 clear_sky["Ednoon"].append(np.nan)
@@ -2089,7 +2092,7 @@ def perez(Eb, Ed, E0, E0h, Td):
 
     # Calculate zenith angle (radians)
     Z = np.arccos(z)
-    Z3 = Z ** 3
+    Z3 = Z**3
 
     # Calculate air mass
     m = air_mass(z)
@@ -2156,8 +2159,7 @@ def perez(Eb, Ed, E0, E0h, Td):
     return It, Ib, Id, Lz
 
 
-def test_coeffs(year=2018):
-
+def test_coeffs(year=2018, methods=None):
     import matplotlib.pyplot as plt
     from itertools import cycle
 
@@ -2168,17 +2170,19 @@ def test_coeffs(year=2018):
 
     f, ax = plt.subplots(4, sharex=True, figsize=(12, 9))
 
-    methods = [
-        "ashrae",
-        "energyplus",
-        "cfsr",
-        "merra2",
-        "era5",
-        "noaa",
-        "sg2",
-        "spa",
-        "aa",
-    ]
+    if methods is None:
+        methods = [
+            "ashrae",
+            "energyplus",
+            "cfsr",
+            "merra2",
+            "era5",
+            "noaa",
+            "sg2",
+            "spa",
+            "aa",
+        ]
+
     line_cycler = cycle(["-", "--", "-.", ":"])
     for method in methods:
         coeffs = orbit(utc, method=method)
@@ -2195,19 +2199,18 @@ def test_coeffs(year=2018):
         borderaxespad=0,
         fontsize="smaller",
     )
+
     plt.tight_layout()
     plt.show()
 
 
 def test_location(lat=33.64, lon=-84.43, dates=None):
-
     import matplotlib.pyplot as plt
 
     if dates is None:
         dates = [np.datetime64(datetime.datetime.utcnow())]
 
     for utc in dates:
-
         # 24 hours centered around UTC
         t = nearest_hour(utc) + np.arange(-12 * 60, 13 * 60, dtype="<m8[m]")
         print(nearest_hour(utc))
@@ -2244,7 +2247,6 @@ def test_location(lat=33.64, lon=-84.43, dates=None):
 
 
 def test_integration(lat=33.64, lon=-84.43, utc=None):
-
     if utc is None:
         utc = np.datetime64(datetime.datetime.utcnow())
 
@@ -2256,7 +2258,6 @@ def test_integration(lat=33.64, lon=-84.43, utc=None):
 
 
 def test_solar_irradiance():
-
     import matplotlib.pyplot as plt
 
     years, months = np.mgrid[1979:2024, 1:13]
@@ -2288,10 +2289,9 @@ def test_solar_irradiance():
 
 
 def test():
-
     # test_solar_irradiance()
-    # test_coeffs(year=2018)
-    test_location()
+    test_coeffs(year=2018)
+    # test_location()
     # test_integration(lat=43.5448, lon=-80.2482)
 
 
