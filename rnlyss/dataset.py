@@ -1065,6 +1065,23 @@ class Dataset(object):
         return stacked
 
 
+class TiledDataset:
+    """
+    Base class for a super-dataset that points to smaller Dataset tiles
+    """
+    def __init__(self, data_dir=None):
+        self.data_dir = get_data_dir(str(self).lower(), data_dir=data_dir)
+
+    def __str__(self):
+        return self.__class__.__name__
+
+    def __call__(self, lat, lon):
+        raise NotImplementedError()
+
+    def __getitem__(self, key):
+        raise NotImplementedError()
+
+
 def test():
     # Attempt to load the banana reanalyses
     b = load_dataset("banana")
