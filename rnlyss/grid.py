@@ -456,6 +456,107 @@ class LambertGrid(Grid):
         return f * self.dx * self.dy / h
 
 
+class RotatedGrid(Grid):
+    """
+    Regular geographic (lat, lon) grid with the north pole rotated to a new location
+    Often referred to as a general oblique transformation
+    """
+
+    def __init__(self, shape, origin, delta, latp, lonp, r=6370000.0, **kwargs):
+        super(RotatedGrid, self).__init__(
+            shape=shape,
+            origin=origin,
+            delta=delta,
+            periodic=False,
+            pole_to_pole=False,
+            **kwargs,
+        )
+
+        # Location of rotated north pole in real-world coordiantes
+        self.latp = latp
+        self.lonp = lonp
+        self.r = r
+
+        # Location of origin in mapped space
+        # self.x0, self.y0 = self.ll2xy(*self.origin)
+
+        # Location of grid center
+        self.lat0, self.lon0 = self.xy2ll(0, 0)
+
+    def ll2xy(self, lat, lon):
+        """
+        Convert (lat, lon) to (x, y)=(lon_r, lat_r)
+        """
+        x, y, z = to_cartesian(lat, lon)
+        xr = dcos(self.latp) * z - dsin(self.latp) * (
+            dcos(self.lonp) * x + dsin(self.lonp) * y
+        )
+        yr = dsin(self.lonp) * x - dcos(self.lonp) * y
+        zr = (
+            dcos(self.latp) * (dcos(self.lonp) * x + dsin(self.lonp) * y)
+            + dsin(self.latp) * z
+        )
+        latr, lonr = to_geographic(xr, yr, zr)
+        return lonr, latr
+
+    def xy2ll(self, lonr, latr):
+        """
+        Convert (lonr, latr)=(x, y) to (lat, lon)
+        """
+        xr, yr, zr = to_cartesian(latr, lonr)
+        x = dsin(self.lonp) * yr + dcos(self.lonp) * (
+            dcos(self.latp) * zr - dsin(self.latp) * xr
+        )
+        y = (
+            dsin(self.lonp) * (dcos(self.latp) * zr - dsin(self.latp) * xr)
+            - dcos(self.lonp) * yr
+        )
+        z = dcos(self.latp) * xr + dsin(self.latp) * zr
+        return to_geographic(x, y, z)
+
+    def crs(self):
+        """
+        Equivalent Cartopy projection
+        """
+        try:
+            import cartopy.crs as ccrs
+        except ImportError:
+            return None
+
+        return ccrs.RotatedPole(pole_latitude=self.latp, pole_longitude=self.lonp)
+
+    def rotate(self, u, v, lat, lon):
+        """
+        Rotate rotated-pole vector onto real-world geographic coordinates
+        (u=east/west, v=north/south).
+        """
+        raise NotImplementedError()
+
+    def areas(self, r=None):
+        """
+        Return area
+
+        Grid is simply rotated, so areas are calculated from rotated
+        geographic coordinates (latr, lonr)
+        """
+
+        if r is None:
+            r = self.r
+
+        # Equirectangular grid
+        dlon = np.abs(self.dx)
+        dlat = np.abs(self.dy)
+
+        # Latitudes of cell-centres
+        _, latc = self.ij2xy(np.arange(self.shape[0]), 0)
+
+        # Calculate areas
+        areas = np.radians(dlon) * 2 * dcos(latc) * dsin(dlat / 2) * r**2
+
+        # Copy in longitude dir'n
+        return np.repeat(areas[:, None], self.shape[1], 1)
+
+
 def plot_extents(grid, nlines=20, nsegs=20):
     """
     Quick plot of extents.
@@ -535,6 +636,19 @@ def test():
         false_easting=5632642.225474948,
         false_northing=4612545.651374279,
         r=6371200,
+    )
+    A = grid.areas(r=1.0)
+    print(A.shape, np.sum(A) / (4 * np.pi))
+    plot_extents(grid)
+
+    # CaSR
+    grid = RotatedGrid(
+        shape=(778, 706),
+        origin=(-44.1, -35.397217),
+        delta=(0.09, 0.09),
+        latp=31.758312454493154,
+        lonp=87.59703130293302,
+        r=6370997,
     )
     A = grid.areas(r=1.0)
     print(A.shape, np.sum(A) / (4 * np.pi))
