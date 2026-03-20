@@ -28,7 +28,7 @@ class HyperSlab(object):
         self.close()
         try:
             self.hdf = h5py.File(self.path, mode=mode, **kwargs)
-        except OSError as ex:
+        except OSError:
             return None
         except Exception:
             raise
