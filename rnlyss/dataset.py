@@ -67,6 +67,35 @@ def get_config_dir(config_file, dset):
         return os.path.normpath(os.path.join(data_dir, dset))
 
 
+def get_data_dir(dset, data_dir=None):
+    if data_dir is None:
+        if dset.upper() in os.environ:
+            # Use environment variable directly
+            return os.path.normpath(os.path.join(os.environ[dset.upper()], dset))
+
+        else:
+            # Check for existence of a config file
+            home_dir = os.path.expanduser("~")
+
+            # Look in XDG_CONFIG_HOME (or $HOME/.config by default)
+            xdg_config_home = os.environ.get(
+                "XDG_CONFIG_HOME", os.path.join(home_dir, ".config")
+            )
+            config_path = os.path.join(xdg_config_home, "rnlyss.conf")
+
+            if os.path.isfile(config_path):
+                # Read from rnlyss.conf
+                return get_config_dir(config_path, dset)
+
+            else:
+                # Default is $HOME/dset
+                return os.path.join(home_dir, dset)
+
+    else:
+        # Specified
+        return os.path.normpath(data_dir)
+
+
 class Dataset(object):
     """
     Base class for gridded datasets e.g. CFSR.
@@ -111,36 +140,8 @@ class Dataset(object):
         """
         Set data directory for this dataset
         """
-        dset = str(self).lower()
-        if data_dir is None:
-            if dset.upper() in os.environ:
-                # Use environment variable directly
-                self.data_dir = os.path.normpath(
-                    os.path.join(os.environ[dset.upper()], dset)
-                )
-
-            else:
-                # Check for existence of a config file
-                home_dir = os.path.expanduser("~")
-
-                # Look in XDG_CONFIG_HOME (or $HOME/.config by default)
-                xdg_config_home = os.environ.get(
-                    "XDG_CONFIG_HOME", os.path.join(home_dir, ".config")
-                )
-                config_path = os.path.join(xdg_config_home, "rnlyss.conf")
-
-                if os.path.isfile(config_path):
-                    # Read from rnlyss.conf
-                    self.data_dir = get_config_dir(config_path, dset)
-
-                else:
-                    # Default is $HOME/dset
-                    self.data_dir = os.path.join(home_dir, dset)
-
-        else:
-            # Specified
-            self.data_dir = os.path.normpath(data_dir)
-
+        # Determine data_dir given class name
+        self.data_dir = get_data_dir(str(self).lower(), data_dir=data_dir)
         # Ensure directory exists
         os.makedirs(self.get_data_path("h5"), exist_ok=True)
 
@@ -398,9 +399,7 @@ class Dataset(object):
             land_bool = self.land_grid().flatten() >= 0.5
 
             # Full lat, lon matrices
-            lats, lons = np.meshgrid(
-                self.grid.lats(), self.grid.lons(), indexing="ij"
-            )
+            lats, lons = np.meshgrid(self.grid.lats(), self.grid.lons(), indexing="ij")
 
             # Build tree of land locations
             self.land_tree = KDTree(
