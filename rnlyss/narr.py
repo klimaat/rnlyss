@@ -10,160 +10,7 @@ import numpy as np
 import netCDF4
 from tqdm import tqdm
 from rnlyss.dataset import Dataset
-from rnlyss.grid import Grid, center
-
-
-class LambertGrid(Grid):
-    def __init__(
-        self, shape, origin, delta, lon0, lat0, lat1, lat2, r=6370000.0, **kwargs
-    ):
-        super(LambertGrid, self).__init__(
-            shape=shape,
-            origin=origin,
-            delta=delta,
-            periodic=False,
-            pole_to_pole=False,
-            **kwargs,
-        )
-
-        self.lon0 = lon0
-        self.lat0 = np.radians(lat0)
-        self.lat1 = np.radians(lat1)
-        self.lat2 = np.radians(lat2)
-        self.r = r
-
-        if self.lat1 == self.lat2:
-            self.n = np.sin(np.abs(self.lat1))
-        else:
-            self.n = np.log(np.cos(self.lat1) / np.cos(self.lat2)) / np.log(
-                np.tan(np.pi / 4 + self.lat2 / 2) / np.tan(np.pi / 4 + self.lat1 / 2)
-            )
-
-        self.F = (
-            np.cos(self.lat1) / self.n * np.tan(np.pi / 4 + self.lat1 / 2) ** self.n
-        )
-
-        self.rho0 = self.r * self.F / np.tan(np.pi / 4 + self.lat0 / 2) ** self.n
-
-        # Easting & northing of origin of grid
-        self.x0, self.y0 = self.ll2xy(*self.origin)
-
-    def ll2xy(self, lat, lon):
-        """
-        Convert (lat, lon) to (x, y)
-        """
-        rho = self.r * self.F / np.tan(np.pi / 4 + np.radians(lat) / 2) ** self.n
-        theta = np.radians(self.n * center(lon - self.lon0))
-        return rho * np.sin(theta), self.rho0 - rho * np.cos(theta)
-
-    def xy2ll(self, x, y):
-        """
-        Convert (x, y) to (lat, lon)
-        """
-        rho = np.sign(self.n) * np.sqrt(x**2 + (self.rho0 - y) ** 2)
-        theta = np.degrees(np.arctan(x / (self.rho0 - y)))
-        lat = np.degrees(
-            2 * np.arctan((self.r * self.F / rho) ** (1.0 / self.n)) - np.pi / 2
-        )
-        lon = center(theta / self.n + self.lon0)
-        return lat, lon
-
-    def crs(self):
-        """
-        Equivalent Cartopy projection
-        """
-        try:
-            import cartopy.crs as ccrs
-        except ImportError:
-            return None
-
-        return ccrs.LambertConformal(
-            central_longitude=self.lon0,
-            central_latitude=np.degrees(self.lat0),
-            false_easting=0,
-            false_northing=0,
-            standard_parallels=(np.degrees(self.lat1), np.degrees(self.lat2)),
-        )
-
-    def alpha(self, lat, lon):
-        """
-        Angle that positive geographical (eastward) x-axis is away from
-        positive Lambert x-axis.
-        """
-        return np.sign(lat) * center(lon - self.lon0) * self.n
-
-    def rotate(self, u, v, lat, lon):
-        """
-        Rotate Lambert vector onto geographic coordinates
-        (u=east/west, v=north/south).
-        """
-        a = np.radians(self.alpha(lat, lon))
-        ca, sa = np.cos(a), np.sin(a)
-        return v * sa + u * ca, v * ca - u * sa
-
-    def map_factor(self, lat, lon):
-        """
-        Calculate the map_factor
-        c.f. Snyder, "Map Projections" eqn (15-4)
-        """
-        return (
-            np.cos(self.lat1)
-            / np.cos(np.radians(lat))
-            * (
-                np.tan(np.pi / 4 + self.lat1 / 2)
-                / np.tan(np.pi / 4 + np.radians(lat) / 2)
-            )
-            ** self.n
-        )
-
-    def areas(self, r=None):
-        """
-        Return area
-
-        area = dx * dy/ h**2 -> m²
-
-        """
-        if r is None:
-            # dx & dy already in m
-            f = 1.0
-        else:
-            # scaling factor
-            f = (r / self.r) ** 2
-
-        i, j = self.indices()
-        lat, lon = self[i, j]
-        h = self.map_factor(lat, lon)
-        return f * self.dx * self.dy / h
-
-    def plot_extents(self):
-        """
-        Quick plot of extents.
-        """
-        import matplotlib.pyplot as plt
-        import cartopy.crs as ccrs
-
-        crs = self.crs()
-        lat, lon = self.extents()
-        x, y = self.ll2xy(lat, lon)
-        ax = plt.subplot(111, projection=ccrs.PlateCarree(central_longitude=self.lon0))
-        ax.coastlines(color="grey")
-        ax.set_global()
-        ax.fill(x, y, color="orange", transform=crs, alpha=0.4)
-        ax.plot(0, 0, "x", color="black", transform=crs)
-        text_props = {
-            "bbox": {"fc": "lightgrey", "alpha": 0.7, "boxstyle": "round"},
-            "color": "black",
-            "transform": crs,
-            "multialignment": "right",
-        }
-        for c in range(4):
-            txt = f"{lat[c]:.3f}°\n{lon[c]:.3f}°"
-            ha = "right" if c in [0, 3] else "left"
-            va = "top" if c in [0, 1] else "bottom"
-            ax.text(x[c], y[c], txt, ha=ha, va=va, **text_props)
-        ax.gridlines()
-        plt.tight_layout()
-        plt.show()
+from rnlyss.grid import LambertGrid
 
 
 class NARR(Dataset):
@@ -223,13 +70,14 @@ class NARR(Dataset):
 
     grid = LambertGrid(
         shape=(277, 349),
-        origin=(1, -145.5),
-        # delta=(32463, 32463),
-        delta=(32463.41, 32463.41),
+        origin=(0, 0),
+        delta=(32463, 32463),
         lon0=-107.0,
         lat0=50.0,
         lat1=50.0,
         lat2=50,
+        false_easting=5632642.225474948,
+        false_northing=4612545.651374279,
         r=6371200,
     )
 
@@ -377,7 +225,6 @@ class NARR(Dataset):
 
             # Loop over request years
             for year in self.iter_year(years):
-                # if self.isscalar(dvar):
                 shape = self.grid.shape
 
                 with self[dvar, year] as slab:
@@ -391,14 +238,8 @@ class NARR(Dataset):
                             shape=shape, year=year, freq=self.freq, **self.dvars[dvar]
                         )
 
-                    # for month in self.iter_month(year, months):
-
-                    # Insert point
-                    # i = slab.date2ind(months=month, hours=hour0)
-
                     # Number of hours in year
                     nh = len(slab)
-                    # nh = slab.month_len(month)
 
                     # Check fill status
                     if slab.isfull() and not force:
@@ -411,11 +252,11 @@ class NARR(Dataset):
                         print("missing... skipping")
                         continue
 
-                    # Shape of this month; i.e. nlat x nlon x nh values
+                    # Shape of this year; i.e. nlat x nlon x nh values
                     shape = self.grid.shape + (nh,)
 
                     with netCDF4.Dataset(path) as nc:
-                        # Check that month isn't truncated
+                        # Check that year isn't truncated
                         if nc.variables[label].shape[0] != nh:
                             print(year, "incomplete... skipping", flush=True)
                             continue
@@ -432,6 +273,9 @@ class NARR(Dataset):
 
 
 def main():
+    from rnlyss.grid import plot_extents
+    import matplotlib.pyplot as plt
+
     N = NARR()
 
     # c.f. https://www.nco.ncep.noaa.gov/pmb/docs/on388/tableb.html#GRID221
@@ -454,7 +298,8 @@ def main():
     print("Area min, mean, max", A.min(), A.mean(), A.max())
     print("Area fraction of Earth", A.sum() / (4 * np.pi))
 
-    N.grid.plot_extents()
+    plot_extents(N.grid)
+    plt.show()
 
 
 if __name__ == "__main__":

@@ -17,6 +17,42 @@ def center(lon, rad=False):
         return ((lon + 180.0) % 360) - 180.0
 
 
+def dcos(d):
+    return np.cos(np.radians(d))
+
+
+def dsin(d):
+    return np.sin(np.radians(d))
+
+
+def dtan(d):
+    return np.tan(np.radians(d))
+
+
+def to_cartesian(lat, lon, r=1.0):
+    """
+    Convert geographic coordinates to Cartesian
+    """
+    a = r * dcos(lat)
+    return a * dcos(lon), a * dsin(lon), r * dsin(lat)
+
+
+def to_geographic(x, y, z):
+    """
+    Convert Cartesian coordinates to geographic
+    """
+    r = np.sqrt(x**2 + y**2 + z**2)
+    return np.degrees(np.arcsin(z / r)), center(np.degrees(np.arctan2(y, x)))
+
+
+def lat_str(lat):
+    return f"{lat:.1f}°N" if lat >= 0 else f"{-lat:.1f}°S"
+
+
+def lon_str(lon):
+    return f"{lon:.1f}°E" if center(lon) >= 0 else f"{-lon:.1f}°W"
+
+
 class Grid(object):
     def __init__(
         self,
@@ -53,8 +89,8 @@ class Grid(object):
         lat, lon = self.xy2ll(x, y)
 
         return (
-            lat.item() if np.isscalar(args[0]) else lat,
-            lon.item() if np.isscalar(args[1]) else lon,
+            lat.item() if np.ndim(args[0]) == 0 else lat,
+            lon.item() if np.ndim(args[1]) == 0 else lon,
         )
 
     def __call__(self, lat, lon, snap=False, limit=False):
@@ -80,8 +116,8 @@ class Grid(object):
             j %= self.shape[1]
 
         return (
-            np.asscalar(i) if np.isscalar(lat) else i,
-            np.asscalar(j) if np.isscalar(lon) else j,
+            i.item() if np.ndim(lat) == 0 else i,
+            j.item() if np.ndim(lon) == 0 else j,
         )
 
     def lats(self):
@@ -180,6 +216,15 @@ class Grid(object):
             for dlon in [-self.dx / 2, self.dx / 2]
         ]
 
+    def mesh(self):
+        """
+        Create a (x, y) mesh
+        """
+        return np.meshgrid(
+            self.x0 + self.dx * np.arange(self.shape[1]),
+            self.y0 + self.dy * np.arange(self.shape[0]),
+        )
+
     def areas(self, r=None):
         """
         Return *all* areas in matrix ni x nj matrix
@@ -204,13 +249,7 @@ class Grid(object):
         dlat = np.abs(np.diff(lats))
 
         # Calculate areas
-        areas = (
-            np.radians(dlon)
-            * 2
-            * np.cos(np.radians(latc))
-            * np.sin(np.radians(dlat) / 2)
-            * r**2
-        )
+        areas = np.radians(dlon) * 2 * dcos(latc) * dsin(dlat / 2) * r**2
 
         # Copy in longitude dir'n
         return np.repeat(areas[:, None], self.shape[1], 1)
@@ -285,7 +324,184 @@ class GaussianGrid(Grid):
         return lat, center(x)
 
 
+class LambertGrid(Grid):
+    def __init__(
+        self,
+        shape,
+        origin,
+        delta,
+        lon0,
+        lat0,
+        lat1,
+        lat2,
+        r=6370000.0,
+        false_easting=0,
+        false_northing=0,
+        **kwargs,
+    ):
+        super(LambertGrid, self).__init__(
+            shape=shape,
+            origin=origin,
+            delta=delta,
+            periodic=False,
+            pole_to_pole=False,
+            **kwargs,
+        )
+
+        self.lon0 = lon0
+        self.lat0 = lat0
+        self.lat1 = lat1
+        self.lat2 = lat2
+        self.r = r
+        self.false_easting = false_easting
+        self.false_northing = false_northing
+
+        if self.lat1 == self.lat2:
+            self.n = dsin(np.abs(self.lat1))
+        else:
+            self.n = np.log(dcos(self.lat1) / dcos(self.lat2)) / np.log(
+                dtan(45 + self.lat2 / 2) / dtan(45 + self.lat1 / 2)
+            )
+
+        self.F = dcos(self.lat1) / self.n * dtan(45 + self.lat1 / 2) ** self.n
+
+        self.rho0 = self.r * self.F / dtan(45 + self.lat0 / 2) ** self.n
+
+    def ll2xy(self, lat, lon):
+        """
+        Convert (lat, lon) to (x, y)
+        """
+        rho = self.r * self.F / dtan(45 + lat / 2) ** self.n
+        theta = self.n * center(lon - self.lon0)
+        return (
+            rho * dsin(theta) + self.false_easting,
+            self.rho0 - rho * dcos(theta) + self.false_northing,
+        )
+
+    def xy2ll(self, x, y):
+        """
+        Convert (x, y) to (lat, lon)
+        """
+        x = x - self.false_easting
+        y = y - self.false_northing
+        rho = np.sign(self.n) * np.sqrt(x**2 + (self.rho0 - y) ** 2)
+        theta = np.degrees(np.arctan(x / (self.rho0 - y)))
+        lat = np.degrees(
+            2 * np.arctan((self.r * self.F / rho) ** (1.0 / self.n)) - np.pi / 2
+        )
+        lon = center(theta / self.n + self.lon0)
+        return lat, lon
+
+    def crs(self):
+        """
+        Equivalent Cartopy projection
+        """
+        try:
+            import cartopy.crs as ccrs
+        except ImportError:
+            return None
+
+        return ccrs.LambertConformal(
+            central_longitude=self.lon0,
+            central_latitude=self.lat0,
+            false_easting=self.false_easting,
+            false_northing=self.false_northing,
+            standard_parallels=(self.lat1, self.lat2),
+        )
+
+    def alpha(self, lat, lon):
+        """
+        Angle that positive geographical (eastward) x-axis is away from
+        positive Lambert x-axis.
+        """
+        return np.sign(lat) * center(lon - self.lon0) * self.n
+
+    def rotate(self, u, v, lat, lon):
+        """
+        Rotate Lambert vector onto geographic coordinates
+        (u=east/west, v=north/south).
+        """
+        a = self.alpha(lat, lon)
+        ca, sa = dcos(a), dsin(a)
+        return v * sa + u * ca, v * ca - u * sa
+
+    def map_factor(self, lat, lon):
+        """
+        Calculate the map_factor
+        c.f. Snyder, "Map Projections" eqn (15-4)
+        """
+        return (
+            dcos(self.lat1)
+            / dcos(lat)
+            * (dtan(45 + self.lat1 / 2) / dtan(45 + lat / 2)) ** self.n
+        )
+
+    def areas(self, r=None):
+        """
+        Return area
+
+        area = dx * dy/ h**2 -> m²
+
+        """
+        if r is None:
+            # dx & dy already in m
+            f = 1.0
+        else:
+            # scaling factor
+            f = (r / self.r) ** 2
+
+        i, j = self.indices()
+        lat, lon = self[i, j]
+        h = self.map_factor(lat, lon)
+        return f * self.dx * self.dy / h
+
+
+def plot_extents(grid, nlines=20, nsegs=20):
+    """
+    Quick plot of extents.
+    """
+    import matplotlib.pyplot as plt
+    import cartopy.crs as ccrs
+
+    try:
+        crs = grid.crs()
+    except AttributeError:
+        raise NotImplementedError(f"No CRS available for {grid}")
+
+    fig = plt.figure(dpi=200)
+    ax = fig.add_subplot(111, projection=ccrs.PlateCarree(central_longitude=grid.lon0))
+    ax.coastlines(color="grey")
+    ax.set_global()
+
+    lat, lon = grid.extents()
+    xc, yc = grid.ll2xy(lat, lon)
+    text_props = {
+        "bbox": {"fc": "lightgrey", "alpha": 0.7, "ec": "none"},
+        "color": "black",
+        "transform": crs,
+        "multialignment": "right",
+    }
+    for c in range(4):
+        txt = "\n".join([lat_str(lat[c]), lon_str(lon[c])])
+        ha = "right" if c in [0, 3] else "left"
+        va = "top" if c in [0, 1] else "bottom"
+        ax.text(xc[c], yc[c], txt, ha=ha, va=va, **text_props)
+    ax.plot(0, 0, "x", color="C1", transform=crs)
+    x = np.linspace(grid.x0, grid.x0 + grid.shape[1] * grid.dx, nsegs)
+    y = np.linspace(grid.y0, grid.y0 + grid.shape[0] * grid.dy, nsegs)
+    for xx in np.linspace(grid.x0, grid.x0 + grid.shape[1] * grid.dx, nlines):
+        ax.plot([xx] * len(y), y, "-", color="C0", alpha=0.75, lw=0.5, transform=crs)
+
+    for yy in np.linspace(grid.y0, grid.y0 + grid.shape[0] * grid.dy, nlines):
+        ax.plot(x, [yy] * len(x), "-", color="C0", alpha=0.75, lw=0.5, transform=crs)
+
+    ax.gridlines()
+    plt.tight_layout()
+
+
 def test():
+    import matplotlib.pyplot as plt
+
     # Regular boring grid
     grid = Grid(shape=(181, 360), origin=(-90, -180), delta=(1, 1))
     A = grid.areas(r=1.0)
@@ -306,6 +522,25 @@ def test():
     grid = GaussianGrid(shape=(880, 1760), origin=(90, 0), delta=(-1, 360 / 1760))
     A = grid.areas(r=1.0)
     print(A.shape, np.sum(A) / (4 * np.pi))
+
+    # NARR
+    grid = LambertGrid(
+        shape=(277, 349),
+        origin=(0, 0),
+        delta=(32463, 32463),
+        lon0=-107.0,
+        lat0=50.0,
+        lat1=50.0,
+        lat2=50.0,
+        false_easting=5632642.225474948,
+        false_northing=4612545.651374279,
+        r=6371200,
+    )
+    A = grid.areas(r=1.0)
+    print(A.shape, np.sum(A) / (4 * np.pi))
+    plot_extents(grid)
+
+    plt.show()
 
 
 if __name__ == "__main__":
