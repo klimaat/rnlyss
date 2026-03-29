@@ -1307,9 +1307,13 @@ def orbit(utc, method=None):
 def total_solar_irradiance_ashrae(utc):
     """
     Return ASHRAE constant solar irradiance value (W/m²)
-    """
 
-    return 1367.0 * (np.ones_like(utc).astype(float))
+    Notes
+    -----
+    The ASHRAE Handbook changed the official solar constant from 1367.0
+    to 1361.1 W/m²
+    """
+    return 1361.1 * (np.ones_like(utc).astype(float))
 
 
 def total_solar_irradiance_era5(utc):
@@ -1512,7 +1516,9 @@ def total_solar_irradiance_ceres(utc):
         [1361.9815, 1361.6037, 1361.8548, 1361.9296, 1361.6021, 1361.7722,
          1361.9615, 1361.4949, 1362.4502, 1361.7398, 1361.8830, 1361.9918],
         [1361.9691, 1361.8983, 1362.2245, 1361.9614, 1361.5599, 1361.7041,
-         1361.8197, 1361.7210, np.nan, np.nan, np.nan, np.nan],
+         1361.8197, 1361.7210, 1361.6455, 1361.6808, 1361.8726, 1361.4434],
+        [1361.4779, 1361.4528, np.nan, np.nan, np.nan, np.nan,
+         np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
         [np.nan, np.nan, np.nan, np.nan, np.nan, np.nan,
          np.nan, np.nan, np.nan, np.nan, np.nan, np.nan],
     ])
