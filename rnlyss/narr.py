@@ -258,10 +258,18 @@ class NARR(Dataset):
                     with netCDF4.Dataset(path) as nc:
                         # Check that year isn't truncated
                         if nc.variables[label].shape[0] != nh:
-                            print(year, "incomplete... skipping", flush=True)
-                            continue
-
-                        print("complete... reading", end=" ", flush=True)
+                            if force:
+                                print(
+                                    year,
+                                    "incomplete... forcing... reading",
+                                    end=" ",
+                                    flush=True,
+                                )
+                            else:
+                                print(year, "incomplete... skipping", flush=True)
+                                continue
+                        else:
+                            print("complete... reading", end=" ", flush=True)
                         x = np.transpose(
                             slab.to_int(nc.variables[label][:], converter), (1, 2, 0)
                         )
