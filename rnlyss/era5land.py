@@ -184,7 +184,7 @@ class ERA5Land(ERA5):
                         "month": "%02d" % month,
                         "day": days,
                         "time": hours,
-                        "format": "grib",
+                        "data_format": "grib",
                         "download_format": "unarchived",
                     },
                     target_path,

@@ -352,8 +352,8 @@ class ERA5(Dataset):
                 "reanalysis-era5-single-levels",
                 {
                     "product_type": "reanalysis",
-                    "format": "netcdf",
-                    "data_format": "unarchived",
+                    "data_format": "netcdf",
+                    "download_format": "unarchived",
                     "variable": full_name,
                     "year": "%04d" % year,
                     "month": "%02d" % month,
