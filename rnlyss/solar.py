@@ -557,7 +557,7 @@ def orbit_era5(utc):
     RDAY = 86400
 
     # Seconds from start of year
-    PTIME = day_of_year(utc) * RDAY
+    PTIME = day_of_year(utc, snap=False) * RDAY
 
     # Fraction of year
     PTETA = PTIME / (RDAY * 365.25)
