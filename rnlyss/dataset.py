@@ -352,7 +352,7 @@ class Dataset(object):
                         return None
 
                     # Quick exit
-                    return np.asscalar(val)
+                    return val.item()
 
             else:
                 with self[dvar, year] as slab:
@@ -1069,6 +1069,7 @@ class TiledDataset:
     """
     Base class for a super-dataset that points to smaller Dataset tiles
     """
+
     def __init__(self, data_dir=None):
         self.data_dir = get_data_dir(str(self).lower(), data_dir=data_dir)
 
